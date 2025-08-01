@@ -1,5 +1,8 @@
-const huggingfaceService = require('../services/huggingfaceService');
+const HuggingFaceAIService = require('../services/huggingfaceService');
 const Session = require('../models/Session');
+
+// Create an instance of the HuggingFace service
+const huggingfaceService = new HuggingFaceAIService();
 
 /**
  * Generate AI response for conversation
