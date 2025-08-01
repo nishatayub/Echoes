@@ -245,7 +245,7 @@ const Landing: React.FC = () => {
               Talk to the memory of a loved one. Heal through AI-powered conversations that feel real, comforting, and deeply personal.
             </p>
             <div className="d-flex justify-content-center gap-3 flex-wrap hero-buttons">
-              <Link to="/get-started" className="btn btn-dark btn-lg px-5 hover-scale">
+              <Link to="/register" className="btn btn-dark btn-lg px-5 hover-scale">
                 Get Started
               </Link>
               <Link to="/how-it-works" className="btn btn-outline-dark btn-lg px-5 hover-scale">
@@ -650,7 +650,7 @@ const Landing: React.FC = () => {
             <div className="col-lg-6">
               <h2 className="fw-bold mb-4" style={{ fontFamily: 'Prosto One, sans-serif' }}>Start Your Healing Journey</h2>
               <p className="mb-4">Try Echoes for free and experience meaningful closure.</p>
-              <Link to="/get-started" className="btn btn-light btn-lg px-5">
+              <Link to="/register" className="btn btn-light btn-lg px-5">
                 Begin Now
               </Link>
             </div>
@@ -672,7 +672,7 @@ const Landing: React.FC = () => {
             <div className="col-lg-2 mb-4 mb-lg-0">
               <h6 className="fw-bold mb-3">Platform</h6>
               <ul className="list-unstyled">
-                <li><Link to="/get-started" className="text-light text-decoration-none">Get Started</Link></li>
+                <li><Link to="/register" className="text-light text-decoration-none">Get Started</Link></li>
                 <li><Link to="/how-it-works" className="text-light text-decoration-none">How It Works</Link></li>
                 <li><Link to="/pricing" className="text-light text-decoration-none">Pricing</Link></li>
               </ul>

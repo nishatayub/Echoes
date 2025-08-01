@@ -89,7 +89,7 @@ Your Echoes application uses a **seamless connection** between the React fronten
 
 ### 🔗 **API Integration**
 - **Development**: Frontend (`localhost:5173`) → Backend (`localhost:8080`)
-- **Production**: Frontend (Your Domain) → Backend (`https://echoes-b18n.onrender.com`)
+- **Production**: Frontend (`https://echoes-beta.vercel.app`) → Backend (`https://echoes-b18n.onrender.com`)
 
 ### 🔧 **Automatic Configuration**
 - Environment-based API URL switching
@@ -144,7 +144,7 @@ GET /api/ai/prompts        // Guided conversations
 ### Live Application
 
 🌐 **Backend API**: [https://echoes-b18n.onrender.com](https://echoes-b18n.onrender.com)
-📱 **Frontend Web App**: [Your Frontend URL Here] *(Deploy your frontend and add the URL)*
+📱 **Frontend Web App**: [https://echoes-beta.vercel.app](https://echoes-beta.vercel.app)
 
 ### Frontend Deployment
 
