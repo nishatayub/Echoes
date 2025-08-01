@@ -1,0 +1,105 @@
+/* Echoes - AI Companion for Grief and Closure */
+
+.App {
+  min-height: 100vh;
+}
+
+/* Custom color scheme for emotional warmth */
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --soft-blue: #667eea;
+  --warm-purple: #764ba2;
+  --gentle-gray: #f8f9fa;
+  --comfort-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for emotional comfort */
+* {
+  transition: all 0.3s ease;
+}
+
+/* Enhanced Bootstrap card styling */
+.card {
+  border: none;
+  box-shadow: var(--comfort-shadow);
+  border-radius: 12px;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Custom button styling */
+.btn {
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: var(--soft-blue);
+  border-color: var(--soft-blue);
+}
+
+.btn-primary:hover {
+  background: var(--warm-purple);
+  border-color: var(--warm-purple);
+}
+
+/* Form styling for emotional safety */
+.form-control {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 12px 16px;
+}
+
+.form-control:focus {
+  border-color: var(--soft-blue);
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Letter styling */
+.letter-content {
+  background: #fefefe;
+  border-left: 4px solid var(--soft-blue);
+  font-size: 1.1rem;
+}
+
+/* Chat message styling */
+.chat-container {
+  background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+}
+
+/* Responsive design for mobile emotional support */
+@media (max-width: 768px) {
+  .display-3 {
+    font-size: 2.5rem;
+  }
+  
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+/* Gentle animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Memory item styling */
+.memory-item {
+  border-left: 3px solid var(--soft-blue);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Conversation bubble enhancements */
+.conversation-bubble {
+  max-width: 85%;
+  word-wrap: break-word;
+}
