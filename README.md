@@ -83,6 +83,39 @@ Echoes is a full-stack web application that provides a safe space for people to 
    npm install
    ```
 
+## Frontend-Backend Connection
+
+Your Echoes application uses a **seamless connection** between the React frontend and Node.js backend:
+
+### 🔗 **API Integration**
+- **Development**: Frontend (`localhost:5173`) → Backend (`localhost:8080`)
+- **Production**: Frontend (Your Domain) → Backend (`https://echoes-b18n.onrender.com`)
+
+### 🔧 **Automatic Configuration**
+- Environment-based API URL switching
+- JWT token authentication for secure API calls
+- CORS enabled for cross-origin requests
+- Axios interceptors for automatic token attachment
+
+### 📡 **Key API Endpoints Used by Frontend**
+```javascript
+// Authentication
+POST /api/auth/login
+POST /api/auth/register
+
+// Sessions Management
+GET /api/sessions
+POST /api/sessions
+GET /api/sessions/:id
+PUT /api/sessions/:id
+DELETE /api/sessions/:id
+
+// AI Features
+POST /api/ai/chat          // Main conversation feature
+POST /api/ai/final-letter  // Letter generation
+GET /api/ai/prompts        // Guided conversations
+```
+
 ### Configuration
 
 1. **Server Environment Variables**
@@ -111,7 +144,41 @@ Echoes is a full-stack web application that provides a safe space for people to 
 ### Live Application
 
 🌐 **Backend API**: [https://echoes-b18n.onrender.com](https://echoes-b18n.onrender.com)
-📱 **Frontend**: Ready for deployment (configured to use production API)
+📱 **Frontend Web App**: [Your Frontend URL Here] *(Deploy your frontend and add the URL)*
+
+### Frontend Deployment
+
+Your frontend is configured to automatically connect to the deployed backend. To deploy:
+
+#### Deploy to Vercel (Recommended):
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# In the client directory
+cd client
+npm run build
+vercel --prod
+```
+
+#### Deploy to Netlify:
+```bash
+# Build the project
+cd client
+npm run build
+
+# Deploy the dist folder to Netlify (drag & drop or CLI)
+```
+
+#### Deploy to GitHub Pages:
+```bash
+# Build and deploy
+cd client
+npm run build
+# Upload dist folder contents to your GitHub Pages repository
+```
+
+**Note**: Your frontend will automatically use the production API (`https://echoes-b18n.onrender.com/api`) when deployed.
 
 ### Running the Application
 

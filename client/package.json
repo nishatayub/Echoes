@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:vercel": "npm run build && vercel --prod",
+    "deploy:netlify": "npm run build && echo 'Build complete! Upload dist folder to Netlify'",
+    "deploy:preview": "npm run build && npm run preview"
   },
   "dependencies": {
     "@types/jspdf": "^1.3.3",

@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const aiController = require('../controllers/aiController');
 
 // All AI routes require authentication
-router.use(auth);
+router.use(authenticateToken);
 
 // POST /api/ai/chat - Generate AI response for conversation
 router.post('/chat', aiController.generateResponse);
