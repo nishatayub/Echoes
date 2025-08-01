@@ -6,9 +6,6 @@ AI_IMPLEMENTATION_SUMMARY.md
 # Training data and documentation
 training/
 
-# Hugging Face service (if created)
-server/services/huggingfaceService.js
-
 # Environment files
 .env
 .env.local

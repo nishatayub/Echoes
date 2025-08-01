@@ -28,18 +28,33 @@ Echoes is a full-stack web application that provides a safe space for people to 
 
 ### Frontend
 - **React 19** with TypeScript
+- **Vite** for build tooling and development
 - **React Router** for navigation
-- **Bootstrap 5** for responsive UI
-- **React Icons** for beautiful icons
+- **Bootstrap 5** for responsive UI design
+- **React Icons** for beautiful iconography
 - **Axios** for API communication
-- **jsPDF** for letter generation
+- **jsPDF** for PDF letter generation
+- **Zustand** for state management
 
 ### Backend
-- **Node.js** with Express
-- **MongoDB** with Mongoose
-- **JWT** for authentication
+- **Node.js** with Express.js framework
+- **MongoDB** with Mongoose ODM
+- **JWT** for secure authentication
 - **bcrypt** for password hashing
+- **HuggingFace Inference API** for AI-powered conversations
 - **CORS** for cross-origin requests
+- **dotenv** for environment configuration
+
+### AI & ML
+- **HuggingFace Transformers** for natural language processing
+- **DialoGPT** model for conversational AI
+- **Emotion-aware response system** with contextual understanding
+- **Intelligent fallback responses** for enhanced user experience
+
+### Deployment
+- **Backend**: Deployed on Render - [https://echoes-b18n.onrender.com](https://echoes-b18n.onrender.com)
+- **Database**: MongoDB Atlas (Cloud)
+- **Frontend**: Ready for deployment on Vercel/Netlify
 
 ## Getting Started
 
@@ -74,20 +89,33 @@ Echoes is a full-stack web application that provides a safe space for people to 
    
    Create `server/.env`:
    ```env
-   PORT=5000
+   PORT=8080
    MONGODB_URI=mongodb://localhost:27017/echoes
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
    NODE_ENV=development
+   HUGGINGFACE_API_KEY=your-huggingface-api-key-optional
    ```
 
 2. **Client Environment Variables**
    
-   Create `client/.env`:
+   Create `client/.env.development` for local development:
    ```env
-   VITE_API_BASE_URL=http://localhost:5000/api
+   VITE_API_BASE_URL=http://localhost:8080/api
+   ```
+   
+   Create `client/.env.production` for production:
+   ```env
+   VITE_API_BASE_URL=https://echoes-b18n.onrender.com/api
    ```
 
+### Live Application
+
+🌐 **Backend API**: [https://echoes-b18n.onrender.com](https://echoes-b18n.onrender.com)
+📱 **Frontend**: Ready for deployment (configured to use production API)
+
 ### Running the Application
+
+#### For Local Development:
 
 1. **Start MongoDB**
    - If using local MongoDB: `mongod`
@@ -98,7 +126,7 @@ Echoes is a full-stack web application that provides a safe space for people to 
    cd server
    npm run dev
    ```
-   Server will run on http://localhost:5000
+   Server will run on http://localhost:8080
 
 3. **Start the Frontend Client**
    ```bash
@@ -112,12 +140,19 @@ Echoes is a full-stack web application that provides a safe space for people to 
    - Create an account or sign in
    - Start your healing journey!
 
+#### For Production:
+
+The application is already deployed and ready to use:
+- **Backend**: [https://echoes-b18n.onrender.com](https://echoes-b18n.onrender.com)
+- **Frontend**: Configure your frontend deployment to use the production API URL
+
 ## API Endpoints
 
+**Base URL**: `https://echoes-b18n.onrender.com/api`
+
 ### Authentication
-- `POST /api/register` - Register new user
-- `POST /api/login` - User login
-- `GET /api/user` - Get current user (protected)
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
 
 ### Sessions
 - `POST /api/sessions` - Create new conversation session
@@ -126,23 +161,93 @@ Echoes is a full-stack web application that provides a safe space for people to 
 - `PUT /api/sessions/:id` - Update session (memories, conversations, letter)
 - `DELETE /api/sessions/:id` - Delete session
 
+### AI Features
+- `POST /api/ai/chat` - Generate AI response for conversation
+- `GET /api/ai/prompts` - Get guided conversation prompts
+- `POST /api/ai/final-letter` - Generate final letter for closure
+- `POST /api/ai/sentiment` - Analyze sentiment of a message
+
+## AI Intelligence Features
+
+### 🧠 **Emotion-Aware Conversations**
+The AI system analyzes user messages for emotional keywords and responds with appropriate empathy:
+- **Grief responses**: Compassionate acknowledgment of loss and sadness
+- **Anger responses**: Validating, non-defensive support
+- **Love responses**: Celebrating and affirming deep connections
+- **Hope responses**: Encouraging forward-looking perspectives
+
+### 🎯 **Conversation Stage Awareness**
+- **Initial conversations**: Warm, welcoming responses to build trust
+- **Developing conversations**: Emotion-specific therapeutic guidance
+- **Deep conversations**: Theme-aware responses that encourage growth
+
+### 🔄 **Intelligent Fallback System**
+- **Primary**: HuggingFace API with DialoGPT model
+- **Secondary**: Contextual response generation based on conversation analysis
+- **Tertiary**: Emotion-appropriate fallback responses for reliability
+
+### ✉️ **Personalized Letter Generation**
+AI creates closure letters that incorporate:
+- Shared memories from the conversation
+- Emotional themes from the dialogue
+- Relationship context and dynamics
+- Healing-focused, forward-looking messages
+
 ## Project Structure
 
 ```
 Echoes/
-├── client/                 # React frontend
+├── client/                     # React TypeScript frontend
 │   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── pages/         # Route components
-│   │   ├── context/       # React contexts (Auth)
-│   │   ├── services/      # API service layer
-│   │   └── App.tsx        # Main app component
-│   ├── public/
+│   │   ├── components/         # Reusable UI components
+│   │   │   ├── ChatInterface.tsx
+│   │   │   ├── EnhancedChat.tsx
+│   │   │   ├── FinalLetter.tsx
+│   │   │   ├── GuidedPrompts.tsx
+│   │   │   ├── MemoryBuilder.tsx
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── pages/             # Route components
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Landing.tsx
+│   │   │   ├── Login.tsx
+│   │   │   ├── Register.tsx
+│   │   │   └── SessionPage.tsx
+│   │   ├── context/           # React contexts
+│   │   │   └── AuthContext.tsx
+│   │   ├── services/          # API service layer
+│   │   │   └── api.ts
+│   │   ├── assets/            # Static assets
+│   │   └── App.tsx            # Main app component
+│   ├── public/                # Public assets
+│   ├── .env.development       # Development environment
+│   ├── .env.production        # Production environment
 │   └── package.json
-├── server/                # Node.js backend
-│   ├── index.js          # Express server
-│   ├── .env              # Environment variables
+├── server/                    # Node.js Express backend
+│   ├── controllers/           # Route controllers
+│   │   ├── aiController.js
+│   │   ├── authController.js
+│   │   └── sessionController.js
+│   ├── middleware/            # Express middleware
+│   │   └── auth.js
+│   ├── models/               # Mongoose models
+│   │   ├── Session.js
+│   │   └── User.js
+│   ├── routes/               # API routes
+│   │   ├── ai.js
+│   │   ├── auth.js
+│   │   └── sessions.js
+│   ├── services/             # Business logic services
+│   │   ├── aiService.js
+│   │   └── huggingfaceService.js
+│   ├── config/               # Configuration
+│   │   └── database.js
+│   ├── index.js              # Express server entry
 │   └── package.json
+├── training/                  # AI training documentation
+│   └── openai-finetuning.md
+├── AI_IMPLEMENTATION_SUMMARY.md
+├── AI_SETUP_GUIDE.md
+├── AI_STRATEGY.md
 └── README.md
 ```
 
