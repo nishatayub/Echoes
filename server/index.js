@@ -19,25 +19,56 @@ const allowedOrigins = [
   'http://localhost:5173', 
   'http://localhost:8080',
   'https://echoes-beta.vercel.app',
+  'https://echoes-beta.vercel.app/',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
+console.log('🔧 CORS Configuration:');
+console.log('- Allowed Origins:', allowedOrigins);
+console.log('- Environment:', process.env.NODE_ENV);
+console.log('- Frontend URL from env:', process.env.FRONTEND_URL);
+
+// More permissive CORS for production debugging
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins temporarily for debugging
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  maxAge: 86400 // 24 hours
 }));
+
+// Add explicit preflight handling
+app.options('*', cors());
+
+// Manual CORS headers as backup
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  console.log('🔍 Manual CORS check for origin:', origin);
+  
+  if (origin && (
+    origin === 'https://echoes-beta.vercel.app' ||
+    origin.includes('localhost') ||
+    origin === process.env.FRONTEND_URL
+  )) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', 'https://echoes-beta.vercel.app');
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  if (req.method === 'OPTIONS') {
+    console.log('✅ Handling OPTIONS preflight request');
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
