@@ -49,7 +49,7 @@ ${conversationHistory}
 Respond as ${personName} would, with love and compassion, helping the user on their healing journey.`;
 
       const response = await this.client.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-3.5-turbo",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
@@ -107,36 +107,53 @@ Respond as ${personName} would, with love and compassion, helping the user on th
    */
   async generateFinalLetter({ personName, memories, conversations, relationshipType = 'loved one' }) {
     try {
-      const memoryContext = memories.map(memory => memory.content).join('\n');
-      const conversationSummary = conversations
+      const memoryContext = memories && memories.length > 0 
+        ? memories.map(memory => memory.content).join('\n')
+        : 'No specific memories were shared during this session.';
+        
+      const userMessages = conversations
         .filter(conv => conv.isUser)
-        .map(conv => conv.message)
-        .join('\n');
+        .map(conv => conv.message);
+      
+      const conversationSummary = userMessages.length > 0 
+        ? userMessages.join('\n') 
+        : 'This was a brief conversation.';
+      
+      // Extract emotional themes from conversations
+      const emotionalThemes = userMessages.length > 0 
+        ? this.extractEmotionalThemes(userMessages)
+        : 'connection and reflection';
 
-      const prompt = `Based on the following memories and conversation, write a heartfelt final letter to ${personName}. This letter should help the user find closure, express their feelings, and say goodbye in a healthy way.
+      const prompt = `You are helping someone write a deeply personal and healing final letter to ${personName}. This letter should feel authentic and unique to their specific situation.
 
-Memories:
+MEMORIES SHARED:
 ${memoryContext}
 
-Things the user has shared:
+WHAT THE USER HAS EXPRESSED:
 ${conversationSummary}
 
-Write a personal, emotional letter that:
-- Expresses gratitude for the relationship
-- Acknowledges the pain of loss
-- Shares important feelings that may have been left unsaid
-- Offers forgiveness if needed
-- Makes promises about moving forward while honoring their memory
-- Provides a sense of closure and peace
+RELATIONSHIP TYPE: ${relationshipType}
 
-The letter should be warm, genuine, and healing. Write it in first person from the user's perspective to ${personName}.`;
+Create a heartfelt, personalized letter that:
+- Uses the SPECIFIC memories and feelings they shared (don't be generic)
+- Reflects their unique emotional journey and what they've expressed
+- Addresses ${personName} directly and personally
+- Acknowledges their specific pain, joy, gratitude, or unresolved feelings
+- Incorporates the emotional themes: ${emotionalThemes}
+- Offers closure while honoring the relationship's unique nature
+- Feels genuine and written BY this person, not a template
+
+Make this letter deeply personal and specific to what they've actually shared. If they only said a little, work with that authentically rather than making assumptions. Write in first person as if the user is speaking directly to ${personName}.
+
+The letter should start with "Dear ${personName}," and end with a personal closing.`;
 
       const response = await this.client.chat.completions.create({
         model: "gpt-4",
         messages: [
+          { role: "system", content: "You are a compassionate writing assistant helping people create deeply personal healing letters. Focus on authenticity and specific details rather than generic language." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 800,
+        max_tokens: 1000,
         temperature: 0.8,
       });
 
@@ -148,8 +165,37 @@ The letter should be warm, genuine, and healing. Write it in first person from t
   }
 
   /**
-   * Analyze sentiment of user's message to provide appropriate responses
-   * @param {string} message - User's message
+   * Extract emotional themes from user messages
+   */
+  extractEmotionalThemes(messages) {
+    const text = messages.join(' ').toLowerCase();
+    const themes = [];
+    
+    if (text.includes('miss') || text.includes('lonely') || text.includes('alone')) {
+      themes.push('missing them deeply');
+    }
+    if (text.includes('angry') || text.includes('mad') || text.includes('frustrated')) {
+      themes.push('unresolved anger');
+    }
+    if (text.includes('sorry') || text.includes('regret') || text.includes('wish')) {
+      themes.push('regret and things left unsaid');
+    }
+    if (text.includes('love') || text.includes('care') || text.includes('special')) {
+      themes.push('deep love and appreciation');
+    }
+    if (text.includes('thank') || text.includes('grateful')) {
+      themes.push('gratitude');
+    }
+    if (text.includes('forgive') || text.includes('hurt')) {
+      themes.push('forgiveness and healing');
+    }
+    
+    return themes.length > 0 ? themes.join(', ') : 'love, loss, and healing';
+  }
+
+  /**
+   * Analyze sentiment and emotional needs of a message
+   * @param {string} message - The message to analyze
    * @returns {Promise<Object>} - Sentiment analysis result
    */
   async analyzeSentiment(message) {

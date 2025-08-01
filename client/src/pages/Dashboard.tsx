@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Session, sessionAPI } from '../services/api';
-import { FaHeart, FaPlus, FaComments, FaCalendar, FaSignOutAlt, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaComments, FaCalendar, FaTrash } from 'react-icons/fa';
+import AppHeader from '../components/AppHeader';
 
 const Dashboard: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -12,23 +13,152 @@ const Dashboard: React.FC = () => {
   const [newPersonName, setNewPersonName] = useState('');
   const [creating, setCreating] = useState(false);
   
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Add custom styles
   useEffect(() => {
-    loadSessions();
+    const style = document.createElement('style');
+    style.textContent = `
+      .dashboard-container {
+        font-family: 'Fredoka, Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+        background-color: #f8f6f3;
+        min-height: 100vh;
+      }
+      
+      .session-card {
+        transition: all 0.3s ease;
+        border: none;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        height: 180px;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .session-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      }
+      
+      .create-button {
+        transition: all 0.3s ease;
+        background: #2c2c2c;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 30px;
+        font-weight: 600;
+      }
+      
+      .create-button:hover {
+        background: #1a1a1a;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      }
+      
+      .nav-brand {
+        font-family: 'Aldrich, sans-serif';
+        color: #2c2c2c;
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+      
+      .welcome-title {
+        font-family: 'Prosto One, sans-serif';
+        color: #2c2c2c;
+      }
+      
+      .section-title {
+        font-family: 'Prosto One, sans-serif';
+        color: #2c2c2c;
+      }
+      
+      .modal-content {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      }
+      
+      .btn-minimal {
+        background: #2c2c2c;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-minimal:hover {
+        background: #1a1a1a;
+        color: white;
+        transform: translateY(-1px);
+      }
+      
+      .btn-outline-minimal {
+        border: 2px solid #2c2c2c;
+        color: #2c2c2c;
+        background: transparent;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-outline-minimal:hover {
+        background: #2c2c2c;
+        color: white;
+        transform: translateY(-1px);
+      }
+      
+      .animate-fadeIn {
+        animation: fadeIn 0.6s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .stats-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.25rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: all 0.3s ease;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      
+      .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
+    console.log('Loading sessions...', { user, token: localStorage.getItem('token') });
     try {
       const sessionsData = await sessionAPI.getSessions();
+      console.log('Sessions loaded:', sessionsData);
       setSessions(sessionsData);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
       setError('Failed to load sessions');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
   const createSession = async () => {
     if (!newPersonName.trim()) return;
@@ -72,68 +202,72 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="dashboard-container d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <div className="spinner-border" style={{ color: '#2c2c2c' }} role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3" style={{ color: '#6c757d' }}>Loading your conversations...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: '#f8f9fa' }}>
+    <div className="dashboard-container">
       {/* Header */}
-      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div className="container">
-          <Link to="/dashboard" className="navbar-brand d-flex align-items-center">
-            <FaHeart className="text-primary me-2" />
-            <span className="fw-light">Echoes</span>
-          </Link>
-          
-          <div className="navbar-nav ms-auto">
-            <div className="nav-item dropdown">
-              <button 
-                className="btn btn-outline-secondary dropdown-toggle" 
-                data-bs-toggle="dropdown"
-              >
-                {user?.name}
-              </button>
-              <ul className="dropdown-menu">
-                <li>
-                  <button className="dropdown-item" onClick={logout}>
-                    <FaSignOutAlt className="me-2" />
-                    Sign Out
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppHeader />
 
-      <div className="container mt-5">
+      <div className="container py-5">
         {/* Welcome Section */}
         <div className="row mb-5">
-          <div className="col-12">
-            <div className="text-center">
-              <h1 className="display-4 fw-light mb-3">Welcome back, {user?.name}</h1>
-              <p className="lead text-muted mb-4">
-                Your safe space for healing conversations and closure
-              </p>
-              <button 
-                className="btn btn-primary btn-lg"
-                onClick={() => setShowCreateModal(true)}
-              >
-                <FaPlus className="me-2" />
-                Start New Conversation
-              </button>
+          <div className="col-12 text-center animate-fadeIn">
+            <h1 className="welcome-title display-4 mb-4">Welcome back, {user?.name}</h1>
+            <p className="lead mb-4" style={{ color: '#6c757d', maxWidth: '600px', margin: '0 auto 2rem' }}>
+              Your safe space for healing conversations and meaningful closure
+            </p>
+            <button 
+              className="btn create-button text-white"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <FaPlus className="me-2" />
+              Start New Conversation
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="row mb-5">
+          <div className="col-md-4 mb-4">
+            <div className="stats-card animate-fadeIn">
+              <FaComments size={24} style={{ color: '#2c2c2c' }} className="mb-2" />
+              <h4 style={{ color: '#2c2c2c', marginBottom: '0.5rem' }}>{sessions.length}</h4>
+              <p style={{ color: '#6c757d', margin: 0, fontSize: '0.9rem' }}>Active Conversations</p>
+            </div>
+          </div>
+          <div className="col-md-4 mb-4">
+            <div className="stats-card animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+              <FaCalendar size={24} style={{ color: '#2c2c2c' }} className="mb-2" />
+              <h4 style={{ color: '#2c2c2c', marginBottom: '0.5rem' }}>
+                {sessions.reduce((total, session) => total + (session.conversations?.length || 0), 0)}
+              </h4>
+              <p style={{ color: '#6c757d', margin: 0, fontSize: '0.9rem' }}>Total Messages</p>
+            </div>
+          </div>
+          <div className="col-md-4 mb-4">
+            <div className="stats-card animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+              <FaComments size={24} style={{ color: '#2c2c2c' }} className="mb-2" />
+              <h4 style={{ color: '#2c2c2c', marginBottom: '0.5rem' }}>
+                {sessions.reduce((total, session) => total + (session.memories?.length || 0), 0)}
+              </h4>
+              <p style={{ color: '#6c757d', margin: 0, fontSize: '0.9rem' }}>Saved Memories</p>
             </div>
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="alert alert-danger alert-dismissible" role="alert">
+          <div className="alert alert-danger border-0 mb-4" role="alert" style={{ backgroundColor: '#f8d7da', color: '#721c24' }}>
             {error}
             <button 
               type="button" 
@@ -146,15 +280,15 @@ const Dashboard: React.FC = () => {
         {/* Sessions Grid */}
         <div className="row">
           <div className="col-12">
-            <h3 className="mb-4">Your Conversations</h3>
+            <h3 className="section-title mb-4">Your Conversations</h3>
             
             {sessions.length === 0 ? (
               <div className="text-center py-5">
-                <FaComments size={64} className="text-muted mb-3" />
-                <h4 className="text-muted">No conversations yet</h4>
-                <p className="text-muted">Start your first healing conversation</p>
+                <FaComments size={48} style={{ color: '#6c757d', marginBottom: '1.5rem' }} />
+                <h4 style={{ color: '#2c2c2c', marginBottom: '1rem' }}>No conversations yet</h4>
+                <p style={{ color: '#6c757d', marginBottom: '2rem' }}>Start your first healing conversation today</p>
                 <button 
-                  className="btn btn-primary"
+                  className="btn create-button text-white"
                   onClick={() => setShowCreateModal(true)}
                 >
                   <FaPlus className="me-2" />
@@ -165,40 +299,44 @@ const Dashboard: React.FC = () => {
               <div className="row">
                 {sessions.map((session) => (
                   <div key={session._id} className="col-md-6 col-lg-4 mb-4">
-                    <div className="card h-100 shadow-sm">
-                      <div className="card-body">
-                        <h5 className="card-title">{session.personName}</h5>
-                        <div className="d-flex align-items-center text-muted mb-2">
-                          <FaCalendar className="me-2" />
-                          <small>{formatDate(session.updatedAt)}</small>
+                    <div className="session-card">
+                      <div className="card-body p-3">
+                        <h6 className="card-title mb-2" style={{ color: '#2c2c2c', fontWeight: '600' }}>
+                          {session.personName}
+                        </h6>
+                        <div className="d-flex align-items-center mb-2" style={{ color: '#6c757d' }}>
+                          <FaCalendar className="me-2" size={12} />
+                          <small style={{ fontSize: '0.8rem' }}>{formatDate(session.updatedAt)}</small>
                         </div>
                         
-                        <div className="mb-3">
-                          <small className="text-muted">
-                            {session.memories.length} memories • {session.conversations.length} messages
+                        <div className="mb-2">
+                          <small style={{ color: '#6c757d', fontSize: '0.8rem' }}>
+                            {session.memories?.length || 0} memories • {session.conversations?.length || 0} messages
                           </small>
                         </div>
                         
-                        {session.conversations.length > 0 && (
-                          <p className="card-text text-muted small">
-                            Last message: {session.conversations[session.conversations.length - 1]?.message.substring(0, 50)}...
+                        {(session.conversations?.length || 0) > 0 && (
+                          <p className="card-text small mb-3" style={{ color: '#6c757d', fontSize: '0.8rem', lineHeight: '1.3' }}>
+                            Last: {session.conversations?.[session.conversations.length - 1]?.message?.substring(0, 50)}...
                           </p>
                         )}
-                      </div>
-                      
-                      <div className="card-footer bg-transparent d-flex justify-content-between">
-                        <Link 
-                          to={`/session/${session._id}`}
-                          className="btn btn-primary btn-sm"
-                        >
-                          Continue
-                        </Link>
-                        <button 
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => deleteSession(session._id)}
-                        >
-                          <FaTrash />
-                        </button>
+                        
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Link 
+                            to={`/session/${session._id}`}
+                            className="btn btn-minimal text-white btn-sm"
+                            style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                          >
+                            Continue
+                          </Link>
+                          <button 
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => deleteSession(session._id)}
+                            style={{ border: 'none', color: '#6c757d', padding: '6px 8px' }}
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -212,41 +350,48 @@ const Dashboard: React.FC = () => {
       {/* Create Session Modal */}
       {showCreateModal && (
         <div className="modal show d-block" tabIndex={-1}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Start New Conversation</h5>
+              <div className="modal-header border-0 pb-0">
+                <h5 className="modal-title" style={{ color: '#2c2c2c', fontFamily: 'Prosto One, sans-serif' }}>
+                  Start New Conversation
+                </h5>
                 <button 
                   type="button" 
                   className="btn-close"
                   onClick={() => setShowCreateModal(false)}
                 ></button>
               </div>
-              <div className="modal-body">
-                <p className="text-muted mb-3">
+              <div className="modal-body pt-0">
+                <p style={{ color: '#6c757d' }} className="mb-4">
                   Who would you like to have a conversation with today?
                 </p>
                 <input
                   type="text"
-                  className="form-control"
+                  className="form-control py-3"
                   placeholder="Enter their name..."
                   value={newPersonName}
                   onChange={(e) => setNewPersonName(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && createSession()}
                   autoFocus
+                  style={{ 
+                    borderColor: '#dee2e6',
+                    fontSize: '1rem',
+                    borderRadius: '8px'
+                  }}
                 />
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer border-0">
                 <button 
                   type="button" 
-                  className="btn btn-secondary"
+                  className="btn btn-outline-minimal"
                   onClick={() => setShowCreateModal(false)}
                 >
                   Cancel
                 </button>
                 <button 
                   type="button" 
-                  className="btn btn-primary"
+                  className="btn btn-minimal text-white"
                   onClick={createSession}
                   disabled={!newPersonName.trim() || creating}
                 >

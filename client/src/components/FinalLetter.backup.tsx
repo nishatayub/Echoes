@@ -30,65 +30,26 @@ const FinalLetter: React.FC<FinalLetterProps> = ({
   const [generating, setGenerating] = useState(false);
 
   const generateFallbackLetter = useCallback(() => {
-    // Analyze memories and conversations to create a meaningful letter
-    const memorySummary = memories.length > 0 
-      ? memories.map(m => m.content).join(' ').slice(0, 200) + (memories.map(m => m.content).join(' ').length > 200 ? '...' : '')
-      : '';
-    
-    const userMessages = conversations.filter(c => c.isUser).map(c => c.message);
-    const conversationThemes = userMessages.length > 0 
-      ? userMessages.join(' ').slice(0, 300) + (userMessages.join(' ').length > 300 ? '...' : '')
-      : '';
-
-    // Create relationship-specific message
-    let relationshipMessage = '';
-    if (relationshipType === 'romantic') {
-      relationshipMessage = 'The love we shared was real and meaningful, and I am grateful for every moment we had together.';
-    } else if (relationshipType === 'family') {
-      relationshipMessage = 'Family bonds like ours are irreplaceable, and you will always hold a special place in my heart.';
-    } else if (relationshipType === 'friend') {
-      relationshipMessage = 'Your friendship has shaped who I am today, and I carry the lessons you taught me forward.';
-    } else {
-      relationshipMessage = 'You have been an important part of my journey, and I want you to know how much that means to me.';
-    }
-
-    // Create a personalized letter based on the content
-    const memorySection = memorySummary 
-      ? `The memories I treasure most include: ${memorySummary}`
-      : 'Though specific memories may fade, the impact you have had on my life remains clear.';
-    
-    const conversationSection = conversationThemes 
-      ? `Through our recent conversations, I have realized: ${conversationThemes}`
-      : 'Our connection has taught me so much about myself and what truly matters.';
-
     const content = `Dear ${personName},
 
-I have been reflecting on our ${relationshipType || 'relationship'} and all the moments we have shared. Writing this letter feels like the right way to express what has been in my heart.
+I've been carrying so much in my heart that I wanted to share with you. Through my memories and thoughts, I want you to know how much you have meant to me.
 
-${memorySection}
+${memories.length > 0 ? memories.slice(0, 2).map(memory => memory.content).join('\n\n') + '\n\n' : ''}
 
-${conversationSection}
+Thank you for being part of my life. Even though we may be apart, you live on in my heart and memories. I carry you with me always.
 
-${relationshipMessage}
-
-Thank you for being part of my story. Even as we move forward on different paths, the positive impact you have made on my life continues to guide me.
-
-With gratitude and warm wishes,
-[Your name]`;
-
+With love and gratitude,
+Me`;
     setLetterContent(content);
-  }, [personName, memories, conversations, relationshipType]);
+  }, [personName, memories]);
 
   const generateAILetter = useCallback(async () => {
     setGenerating(true);
     try {
-      // The AI service should analyze the session data on the backend
-      // and generate a thoughtful letter based on conversation patterns and insights
       const result = await aiAPI.generateFinalLetter(sessionId, relationshipType);
       setLetterContent(result.finalLetter);
     } catch (error) {
       console.error('Error generating AI letter:', error);
-      // Fall back to intelligent fallback generation
       generateFallbackLetter();
     } finally {
       setGenerating(false);
@@ -115,20 +76,9 @@ With gratitude and warm wishes,
     }
   };
 
-    const regenerateLetter = async () => {
-    setLetterContent(''); // Clear existing content
-    setGenerating(true);
-    try {
-      // Force a fresh AI generation
-      const result = await aiAPI.generateFinalLetter(sessionId, relationshipType);
-      setLetterContent(result.finalLetter);
-    } catch (error) {
-      console.error('Error regenerating letter:', error);
-      // Enhanced fallback that uses actual conversation content
-      generateFallbackLetter();
-    } finally {
-      setGenerating(false);
-    }
+  const regenerateLetter = () => {
+    setLetterContent('');
+    generateAILetter();
   };
 
   const downloadPDF = () => {

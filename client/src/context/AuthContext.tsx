@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, authAPI } from '../services/api';
+import React, { createContext, useContext, useEffect, ReactNode } from 'react';
+import { useAuthStore, User } from '../stores/authStore';
+import { authAPI } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -25,29 +26,17 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, token, setUser, setToken, setLoading, clearAuth, loading } = useAuthStore();
 
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        
-        // Verify token is still valid
+      if (token && !user) {
         try {
           const currentUser = await authAPI.getUser();
           setUser(currentUser);
         } catch {
           // Token is invalid, clear storage
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setToken(null);
-          setUser(null);
+          clearAuth();
         }
       }
       
@@ -55,16 +44,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initAuth();
-  }, []);
+  }, [token, user, setUser, clearAuth, setLoading]);
 
   const login = async (email: string, password: string) => {
     const response = await authAPI.login(email, password);
     
     setToken(response.token);
     setUser(response.user);
-    
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response.user));
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -72,16 +58,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     setToken(response.token);
     setUser(response.user);
-    
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response.user));
   };
 
   const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearAuth();
   };
 
   const value = {
