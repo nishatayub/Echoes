@@ -7,21 +7,19 @@ interface AppHeaderProps {
   showBackButton?: boolean;
   backLink?: string;
   title?: string;
-  children?: React.ReactNode;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ 
   showBackButton = false, 
   backLink = '/dashboard',
-  title,
-  children 
+  title
 }) => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/'); // Redirect to landing page instead of login
   };
 
   return (
@@ -70,29 +68,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
         
         <div className="d-flex align-items-center">
-          {children}
-          
-          <div className="nav-item dropdown ms-3">
-            <button 
-              className="btn btn-outline-secondary dropdown-toggle" 
-              data-bs-toggle="dropdown"
-              style={{
-                borderColor: '#2c2c2c',
-                color: '#2c2c2c',
-                borderRadius: '6px'
-              }}
-            >
-              {user?.name}
-            </button>
-            <ul className="dropdown-menu">
-              <li>
-                <button className="dropdown-item" onClick={handleLogout}>
-                  <FaSignOutAlt className="me-2" />
-                  Sign Out
-                </button>
-              </li>
-            </ul>
-          </div>
+          {/* Direct Sign Out Button */}
+          <button 
+            className="btn btn-outline-secondary btn-sm"
+            onClick={handleLogout}
+            style={{
+              borderColor: '#2c2c2c',
+              color: '#2c2c2c',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '0.9rem'
+            }}
+          >
+            <FaSignOutAlt className="me-1" />
+            Sign Out
+          </button>
         </div>
       </div>
     </nav>
