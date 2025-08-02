@@ -144,17 +144,39 @@ const Dashboard: React.FC = () => {
 
   const loadSessions = useCallback(async () => {
     console.log('Loading sessions...', { user, token: localStorage.getItem('token') });
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      setError('Request timed out. Please check your connection and try again.');
+    }, 10000); // 10 second timeout
+    
     try {
       const sessionsData = await sessionAPI.getSessions();
       console.log('Sessions loaded:', sessionsData);
       setSessions(sessionsData);
-    } catch (error) {
-      console.error('Failed to load sessions:', error);
-      setError('Failed to load sessions');
+      clearTimeout(timeoutId);
+    } catch (err) {
+      console.error('Failed to load sessions:', err);
+      clearTimeout(timeoutId);
+      
+      // Type assertion for error handling
+      const error = err as { response?: { status?: number; data?: { message?: string } }; code?: string; message?: string };
+      
+      // More specific error messages
+      if (error.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+        // Optionally redirect to login
+        navigate('/login');
+      } else if (error.response?.status === 0 || error.code === 'NETWORK_ERROR') {
+        setError('Unable to connect to server. Please check your internet connection.');
+      } else {
+        setError(`Failed to load sessions: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+      }
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, navigate]);
 
   useEffect(() => {
     loadSessions();
@@ -267,13 +289,25 @@ const Dashboard: React.FC = () => {
 
         {/* Error Alert */}
         {error && (
-          <div className="alert alert-danger border-0 mb-4" role="alert" style={{ backgroundColor: '#f8d7da', color: '#721c24' }}>
-            {error}
-            <button 
-              type="button" 
-              className="btn-close" 
-              onClick={() => setError('')}
-            ></button>
+          <div className="alert alert-danger border-0 mb-4 d-flex justify-content-between align-items-center" role="alert" style={{ backgroundColor: '#f8d7da', color: '#721c24' }}>
+            <span>{error}</span>
+            <div>
+              <button 
+                className="btn btn-sm btn-outline-danger me-2"
+                onClick={() => {
+                  setError('');
+                  setLoading(true);
+                  loadSessions();
+                }}
+              >
+                Retry
+              </button>
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={() => setError('')}
+              ></button>
+            </div>
           </div>
         )}
 
