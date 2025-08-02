@@ -1,7 +1,8 @@
 # 🌟 Echoes - AI-Powered Grief Companion & Healing Platform
 
 <div align="center">
-**A compassionate AI companion that helps people find closure and healing through personalized conversations**
+    
+  **A compassionate AI companion that helps people find closure and healing through personalized conversations**
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-success?style=for-the-badge)](https://echoes-beta.vercel.app)
 [![Backend API](https://img.shields.io/badge/🔗_API-Backend_Server-blue?style=for-the-badge)](https://echoes-b18n.onrender.com)
