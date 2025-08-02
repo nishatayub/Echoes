@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const [newPersonName, setNewPersonName] = useState('');
   const [creating, setCreating] = useState(false);
   
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
   // Add custom styles
@@ -143,7 +143,21 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const loadSessions = useCallback(async () => {
-    console.log('Loading sessions...', { user, token: localStorage.getItem('token') });
+    console.log('Loading sessions...', { user, token });
+    
+    // If user exists but no token, clear auth state
+    if (user && !token) {
+      console.warn('User exists but token is null - clearing auth state');
+      navigate('/login');
+      return;
+    }
+    
+    // Don't load sessions if no user is authenticated
+    if (!user || !token) {
+      console.log('No authenticated user, skipping session load');
+      setLoading(false);
+      return;
+    }
     
     // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
@@ -176,11 +190,14 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, navigate]);
+  }, [user, token, navigate]);
 
   useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
+    // Only load sessions if we have both user and token
+    if (user && token) {
+      loadSessions();
+    }
+  }, [user, token, loadSessions]);
 
   const createSession = async () => {
     if (!newPersonName.trim()) return;

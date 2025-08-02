@@ -195,18 +195,6 @@ const SessionPage: React.FC = () => {
   const addMessage = async (message: string, isUser: boolean) => {
     if (!session) return;
     
-    // Handle special refresh request from ChatInterface
-    if (message === '__REFRESH_SESSION__') {
-      // Refresh the session data from the backend
-      try {
-        const updatedSession = await sessionAPI.getSession(session._id);
-        setSession(updatedSession);
-      } catch (error) {
-        console.error('Error refreshing session:', error);
-      }
-      return;
-    }
-    
     const newConversation: Conversation = {
       message,
       isUser,

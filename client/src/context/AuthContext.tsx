@@ -30,12 +30,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
+      // If user exists but no token, clear inconsistent state
+      if (user && !token) {
+        console.warn('Inconsistent auth state detected: user exists but no token. Clearing auth.');
+        clearAuth();
+        setLoading(false);
+        return;
+      }
+      
+      // If token exists but no user, try to fetch user
       if (token && !user) {
         try {
           const currentUser = await authAPI.getUser();
           setUser(currentUser);
         } catch {
           // Token is invalid, clear storage
+          console.warn('Token validation failed. Clearing auth.');
           clearAuth();
         }
       }

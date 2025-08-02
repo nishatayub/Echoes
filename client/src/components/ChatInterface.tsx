@@ -167,12 +167,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     const userMessage = currentMessage;
     setCurrentMessage('');
-    setSending(true);
     
     try {
       console.log('Sending message:', userMessage);
       
-      // Call AI API to get response (this will handle storing both user and AI messages)
+      // Step 1: Add user message immediately to UI
+      await onSendMessage(userMessage, true);
+      
+      // Step 2: Show loading state for AI response
+      setSending(true);
+      
+      // Step 3: Call AI API to get response 
       console.log('Calling AI API with:', { sessionId, userMessage, relationshipType });
       const aiResponse = await aiAPI.generateResponse(
         sessionId, 
@@ -182,11 +187,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       console.log('AI API Response:', aiResponse);
       
-      // Since the backend handles message storage, we need to trigger a refresh
-      // by calling onSendMessage with special parameters to indicate a refresh is needed
-      if (onSendMessage) {
-        // Call with a special flag to indicate this is a refresh request
-        await onSendMessage('__REFRESH_SESSION__', false);
+      // Step 4: Add AI response to UI
+      if (aiResponse?.response) {
+        await onSendMessage(aiResponse.response, false);
+      } else {
+        // Fallback response if AI response is empty
+        await onSendMessage(
+          `I'm here with you. Please tell me more about ${personName}.`, 
+          false
+        );
       }
       
     } catch (error) {
@@ -232,7 +241,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className="thinking-indicator">
             <div className="d-flex align-items-center">
               <div className="spinner-border spinner-border-sm me-2" style={{ color: '#2c2c2c' }} role="status"></div>
-              <span style={{ color: '#6c757d' }}>Thinking...</span>
+              <span style={{ color: '#6c757d' }}>{personName} is thinking...</span>
             </div>
           </div>
         )}
