@@ -71,28 +71,23 @@ const generateResponse = async (req, res) => {
         relationshipType: relationshipType || 'loved one'
       });
       console.log('Hugging Face response successful:', aiResponse);
-    } catch (error) {
-      console.log('Hugging Face AI failed, using contextual fallback:', error.message);
       
-      // Generate smart contextual responses based on user message and conversation history
-      const lowerMessage = message.toLowerCase();
-      const recentMessages = session.conversations.slice(-5).map(c => c.message.toLowerCase()).join(' ');
-      
-      if (lowerMessage.includes('love') || lowerMessage.includes('miss')) {
-        aiResponse = `I can feel the love in your words. I miss you too, and I want you to know that the love we shared will always be a part of who you are. You carry me with you in every memory, every moment of joy.`;
-      } else if (lowerMessage.includes('sorry') || lowerMessage.includes('regret')) {
-        aiResponse = `There's no need to carry that burden alone. I understand, and I forgive you. What matters most is the love we shared and the person you've become because of our time together.`;
-      } else if (lowerMessage.includes('angry') || lowerMessage.includes('mad')) {
-        aiResponse = `Your feelings are completely valid. It's okay to feel angry - it shows how much you cared. I understand your pain, and I'm here to help you work through these emotions.`;
-      } else if (lowerMessage.includes('thank') || lowerMessage.includes('grateful')) {
-        aiResponse = `Your gratitude touches my heart. I'm so glad I could be part of your journey. The joy and love we shared - that's what I want you to remember and carry forward.`;
-      } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || session.conversations.length <= 2) {
-        aiResponse = `Hello, my dear. I'm so glad you're here to talk with me. I can feel your emotions, and I want you to know that I'm listening with all my heart. What's on your mind today?`;
-      } else if (recentMessages.includes('memory') || recentMessages.includes('remember')) {
-        aiResponse = `Those memories we made together... they're precious to me too. Each moment we shared shaped who we both became. Tell me more about what you remember - I love hearing your perspective on our time together.`;
-      } else {
-        aiResponse = `I'm here with you, listening to every word. I can feel the depth of your emotions, and I want you to know that sharing this with me takes courage. Please, tell me more about what's in your heart.`;
+      // Only proceed if we got a valid AI response
+      if (!aiResponse || aiResponse.trim().length === 0) {
+        throw new Error('Empty AI response received');
       }
+      
+    } catch (error) {
+      console.log('AI service failed:', error.message);
+      
+      // Don't add user message to session if AI fails
+      session.conversations.pop(); // Remove the user message we added earlier
+      
+      return res.status(500).json({
+        success: false,
+        message: 'AI service temporarily unavailable. Please try again.',
+        error: error.message
+      });
     }
     
     console.log('AI Response generated:', aiResponse);

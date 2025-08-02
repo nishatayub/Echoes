@@ -7,93 +7,132 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Generate response using Hugging Face models with intelligent fallbacks
+   * Generate response using Hugging Face models - only genuine AI responses
    */
   async generateResponse({ personName, memories, conversations, userMessage, relationshipType = 'loved one' }) {
     try {
-      // Try using Hugging Face API first
-      try {
-        const response = await this.hf.textGeneration({
-          model: 'microsoft/DialoGPT-medium',
-          inputs: userMessage,
-          parameters: {
-            max_new_tokens: 100,
-            temperature: 0.7,
-            do_sample: true,
-            return_full_text: false
+      // Prepare context for better AI responses
+      const context = this.buildContext(personName, memories, conversations, relationshipType);
+      const prompt = `${context}\nUser: ${userMessage}\nResponse:`;
+      
+      // Try multiple models for better response quality
+      const models = [
+        'microsoft/DialoGPT-medium',
+        'facebook/blenderbot-400M-distill',
+        'microsoft/DialoGPT-small'
+      ];
+      
+      for (const model of models) {
+        try {
+          console.log(`Trying model: ${model}`);
+          
+          const response = await this.hf.textGeneration({
+            model: model,
+            inputs: prompt,
+            parameters: {
+              max_new_tokens: 150,
+              temperature: 0.8,
+              do_sample: true,
+              return_full_text: false,
+              repetition_penalty: 1.1,
+              top_p: 0.9
+            }
+          });
+
+          let aiResponse = response.generated_text || response;
+          if (typeof aiResponse === 'object' && aiResponse.generated_text) {
+            aiResponse = aiResponse.generated_text;
           }
-        });
-
-        let aiResponse = response.generated_text || response;
-        if (typeof aiResponse === 'object' && aiResponse.generated_text) {
-          aiResponse = aiResponse.generated_text;
+          
+          // Clean up the response
+          aiResponse = this.cleanResponse(aiResponse);
+          
+          // Validate response quality
+          if (this.isValidResponse(aiResponse, userMessage)) {
+            console.log(`Success with model ${model}:`, aiResponse);
+            return aiResponse;
+          }
+          
+        } catch (modelError) {
+          console.log(`Model ${model} failed:`, modelError.message);
+          continue;
         }
-        
-        aiResponse = aiResponse.replace(/^(User:|AI:|Assistant:)/i, '').trim();
-        
-        if (aiResponse && aiResponse.length > 10) {
-          return aiResponse;
-        }
-      } catch (error) {
-        console.log('Hugging Face API Error:', error.message);
       }
-
-      // Enhanced intelligent fallback responses
-      return this.generateIntelligentResponse(userMessage, personName, conversations, memories, relationshipType);
+      
+      // If all models fail, throw error instead of using fallback
+      throw new Error('All AI models failed to generate response');
 
     } catch (error) {
-      console.error('Generate Response Error:', error);
-      return this.generateIntelligentResponse(userMessage, personName, conversations, memories, relationshipType);
+      console.error('AI Generation Error:', error);
+      throw new Error(`AI service unavailable: ${error.message}`);
     }
+  }
+  
+  /**
+   * Build context for better AI responses
+   */
+  buildContext(personName, memories, conversations, relationshipType) {
+    let context = `You are speaking as ${personName}, a ${relationshipType} who has passed away. You are having a heartfelt conversation to provide comfort and closure. Be empathetic, personal, and emotionally supportive.\n\n`;
+    
+    if (memories && memories.length > 0) {
+      context += `Important memories:\n${memories.slice(-3).map(m => `- ${m.content}`).join('\n')}\n\n`;
+    }
+    
+    if (conversations && conversations.length > 0) {
+      context += `Recent conversation:\n${conversations.slice(-3).map(c => 
+        `${c.isUser ? 'User' : personName}: ${c.message}`
+      ).join('\n')}\n\n`;
+    }
+    
+    return context;
+  }
+  
+  /**
+   * Clean and format AI response
+   */
+  cleanResponse(response) {
+    if (!response) return '';
+    
+    // Remove common prefixes
+    response = response.replace(/^(User:|AI:|Assistant:|Response:)/i, '').trim();
+    
+    // Remove quotation marks if they wrap the entire response
+    if (response.startsWith('"') && response.endsWith('"')) {
+      response = response.slice(1, -1);
+    }
+    
+    // Ensure proper sentence ending
+    if (response && !response.match(/[.!?]$/)) {
+      response += '.';
+    }
+    
+    return response.trim();
+  }
+  
+  /**
+   * Validate if response is appropriate and meaningful
+   */
+  isValidResponse(response, userMessage) {
+    if (!response || response.length < 10) return false;
+    if (response.length > 500) return false;
+    
+    // Check for repetitive or nonsensical responses
+    const words = response.toLowerCase().split(' ');
+    const uniqueWords = new Set(words);
+    if (words.length > 10 && uniqueWords.size / words.length < 0.5) return false;
+    
+    // Avoid responses that just repeat the user message
+    if (response.toLowerCase().includes(userMessage.toLowerCase()) && userMessage.length > 10) {
+      return false;
+    }
+    
+    return true;
   }
 
   /**
-   * Generate intelligent contextual responses based on conversation analysis
+   * Analyze sentiment using Hugging Face models
    */
-  generateIntelligentResponse(userMessage, personName, conversations, memories, relationshipType) {
-    const lowerMessage = userMessage.toLowerCase();
-    const conversationCount = conversations.length;
-    
-    // Analyze recent conversation patterns
-    const recentUserMessages = conversations
-      .filter(c => c.isUser)
-      .slice(-3)
-      .map(c => c.message.toLowerCase())
-      .join(' ');
-    
-    // Determine emotional context
-    const emotionalKeywords = {
-      grief: ['miss', 'gone', 'lost', 'empty', 'alone', 'sad', 'cry', 'tears'],
-      anger: ['angry', 'mad', 'furious', 'hate', 'unfair', 'why', 'frustrated'],
-      guilt: ['sorry', 'fault', 'should have', 'regret', 'forgive', 'mistake'],
-      love: ['love', 'care', 'special', 'heart', 'beautiful', 'wonderful'],
-      gratitude: ['thank', 'grateful', 'appreciate', 'helped', 'glad'],
-      confusion: ['confused', 'understand', 'why', 'how', 'explain', 'lost'],
-      hope: ['hope', 'future', 'better', 'heal', 'forward', 'strength']
-    };
-
-    let dominantEmotion = 'neutral';
-    let maxMatches = 0;
-    
-    for (const [emotion, keywords] of Object.entries(emotionalKeywords)) {
-      const matches = keywords.filter(keyword => lowerMessage.includes(keyword)).length;
-      if (matches > maxMatches) {
-        maxMatches = matches;
-        dominantEmotion = emotion;
-      }
-    }
-
-    // Generate responses based on conversation stage and emotion
-    if (conversationCount <= 2) {
-      return this.generateGreetingResponse(userMessage, personName, relationshipType);
-    } else if (conversationCount <= 6) {
-      return this.generateEarlyConversationResponse(userMessage, personName, dominantEmotion, relationshipType);
-    } else {
-      return this.generateDeepConversationResponse(userMessage, personName, dominantEmotion, conversations, relationshipType);
-    }
-  }
-
-  generateGreetingResponse(userMessage, personName, relationshipType) {
+  async analyzeSentiment(text) {
     const lowerMessage = userMessage.toLowerCase();
     
     if (lowerMessage.includes('hi') || lowerMessage.includes('hello')) {
