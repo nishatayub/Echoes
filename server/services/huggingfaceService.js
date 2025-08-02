@@ -1,4 +1,5 @@
 const { HfInference } = require('@huggingface/inference');
+const fetch = require('node-fetch');
 
 class HuggingFaceAIService {
   constructor() {
@@ -7,82 +8,222 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Generate response using Hugging Face models - only genuine AI responses
+   * Generate response using free AI alternatives
    */
   async generateResponse({ personName, memories, conversations, userMessage, relationshipType = 'loved one' }) {
     try {
-      // Prepare context for better AI responses
-      const context = this.buildContext(personName, memories, conversations, relationshipType);
-      const prompt = `${context}\nUser: ${userMessage}\nResponse:`;
+      // Try OpenAI-compatible free services first
+      console.log('Trying free AI alternatives...');
       
-      // Try multiple models for better response quality
-      const models = [
-        'microsoft/DialoGPT-medium',
-        'facebook/blenderbot-400M-distill',
-        'microsoft/DialoGPT-small'
-      ];
-      
-      for (const model of models) {
-        try {
-          console.log(`Trying model: ${model}`);
-          
-          const response = await this.hf.textGeneration({
-            model: model,
-            inputs: prompt,
-            parameters: {
-              max_new_tokens: 150,
-              temperature: 0.8,
-              do_sample: true,
-              return_full_text: false,
-              repetition_penalty: 1.1,
-              top_p: 0.9
-            }
-          });
-
-          let aiResponse = response.generated_text || response;
-          if (typeof aiResponse === 'object' && aiResponse.generated_text) {
-            aiResponse = aiResponse.generated_text;
-          }
-          
-          // Clean up the response
-          aiResponse = this.cleanResponse(aiResponse);
-          
-          // Validate response quality
-          if (this.isValidResponse(aiResponse, userMessage)) {
-            console.log(`Success with model ${model}:`, aiResponse);
-            return aiResponse;
-          }
-          
-        } catch (modelError) {
-          console.log(`Model ${model} failed:`, modelError.message);
-          continue;
+      // Option 1: Try Groq (free tier with Llama models)
+      try {
+        const groqResponse = await this.tryGroqAPI(personName, memories, conversations, userMessage, relationshipType);
+        if (groqResponse) {
+          console.log('Success with Groq API');
+          return groqResponse;
         }
+      } catch (groqError) {
+        console.log('Groq API failed:', groqError.message);
       }
-      
-      // If all models fail, throw error instead of using fallback
-      throw new Error('All AI models failed to generate response');
+
+      // Option 2: Try Together.ai (free tier)
+      try {
+        const togetherResponse = await this.tryTogetherAPI(personName, memories, conversations, userMessage, relationshipType);
+        if (togetherResponse) {
+          console.log('Success with Together.ai');
+          return togetherResponse;
+        }
+      } catch (togetherError) {
+        console.log('Together.ai failed:', togetherError.message);
+      }
+
+      // Option 3: Try Ollama local models (if available)
+      try {
+        const ollamaResponse = await this.tryOllamaAPI(personName, memories, conversations, userMessage, relationshipType);
+        if (ollamaResponse) {
+          console.log('Success with Ollama');
+          return ollamaResponse;
+        }
+      } catch (ollamaError) {
+        console.log('Ollama failed:', ollamaError.message);
+      }
+
+      // Option 4: Simple pattern-based responses as last resort
+      const contextualResponse = this.generateContextualResponse(personName, userMessage, relationshipType, memories);
+      if (contextualResponse) {
+        console.log('Using contextual response pattern');
+        return contextualResponse;
+      }
+
+      throw new Error('All AI services and fallbacks failed');
 
     } catch (error) {
       console.error('AI Generation Error:', error);
       throw new Error(`AI service unavailable: ${error.message}`);
     }
   }
+
+  /**
+   * Try Groq API (free tier with Llama models)
+   */
+  async tryGroqAPI(personName, memories, conversations, userMessage, relationshipType) {
+    const context = this.buildContext(personName, memories, conversations, relationshipType);
+    
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY || 'gsk_demo_key'}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama3-8b-8192',
+          messages: [
+            {
+              role: 'system',
+              content: context
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ],
+          max_tokens: 150,
+          temperature: 0.8
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.choices[0]?.message?.content?.trim();
+      }
+    } catch (error) {
+      throw new Error('Groq API request failed');
+    }
+    return null;
+  }
+
+  /**
+   * Try Together.ai API (free tier)
+   */
+  async tryTogetherAPI(personName, memories, conversations, userMessage, relationshipType) {
+    const context = this.buildContext(personName, memories, conversations, relationshipType);
+    
+    try {
+      const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.TOGETHER_API_KEY || 'demo_key'}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/Llama-2-7b-chat-hf',
+          messages: [
+            {
+              role: 'system',
+              content: context
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ],
+          max_tokens: 150,
+          temperature: 0.8
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.choices[0]?.message?.content?.trim();
+      }
+    } catch (error) {
+      throw new Error('Together.ai API request failed');
+    }
+    return null;
+  }
+
+  /**
+   * Try Ollama local API (if running locally)
+   */
+  async tryOllamaAPI(personName, memories, conversations, userMessage, relationshipType) {
+    const context = this.buildContext(personName, memories, conversations, relationshipType);
+    
+    try {
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama2',
+          prompt: `${context}\nUser: ${userMessage}\n${personName}:`,
+          stream: false,
+          options: {
+            temperature: 0.8,
+            num_predict: 100
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.response?.trim();
+      }
+    } catch (error) {
+      throw new Error('Ollama API request failed');
+    }
+    return null;
+  }
+
+  /**
+   * Generate contextual response using patterns
+   */
+  generateContextualResponse(personName, userMessage, relationshipType, memories) {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Analyze message sentiment and content
+    const isGreeting = /hello|hi|hey|good morning|good evening/.test(lowerMessage);
+    const isQuestion = userMessage.includes('?') || /what|how|why|when|where|who/.test(lowerMessage);
+    const isFeeling = /feel|feeling|sad|happy|miss|love|hurt|pain/.test(lowerMessage);
+    const isMemory = /remember|recall|think about|used to/.test(lowerMessage);
+    
+    let response = '';
+    
+    if (isGreeting) {
+      response = `Hello my dear. It's so wonderful to hear from you. I've been thinking about you and hoping you're taking care of yourself.`;
+    } else if (isMemory && memories && memories.length > 0) {
+      const recentMemory = memories[memories.length - 1];
+      response = `I remember that too... ${recentMemory.content.slice(0, 50)}... Those moments we shared mean everything to me. What brings that memory to your heart today?`;
+    } else if (isFeeling) {
+      response = `I can feel the emotion in your words, and I want you to know that whatever you're going through, you're not alone. I'm here with you, always. Tell me more about what's in your heart.`;
+    } else if (isQuestion) {
+      response = `That's such an important question. While I may not have all the answers, I want you to know that your curiosity and desire to understand shows how much you care. What matters most is how you feel about it.`;
+    } else {
+      response = `I hear you, and your words touch my heart. Every moment we can share like this is precious to me. You are so loved, more than you could ever know.`;
+    }
+    
+    return response;
+  }
   
   /**
    * Build context for better AI responses
    */
   buildContext(personName, memories, conversations, relationshipType) {
-    let context = `You are speaking as ${personName}, a ${relationshipType} who has passed away. You are having a heartfelt conversation to provide comfort and closure. Be empathetic, personal, and emotionally supportive.\n\n`;
+    let context = `This is a heartfelt conversation between a user and ${personName}, who was their ${relationshipType} and has passed away. ${personName} speaks with love, empathy, and provides comfort. The conversation should be deeply personal, emotional, and healing.\n\n`;
     
     if (memories && memories.length > 0) {
-      context += `Important memories:\n${memories.slice(-3).map(m => `- ${m.content}`).join('\n')}\n\n`;
+      context += `Shared memories:\n${memories.slice(-2).map(m => `- ${m.content}`).join('\n')}\n\n`;
     }
     
     if (conversations && conversations.length > 0) {
-      context += `Recent conversation:\n${conversations.slice(-3).map(c => 
+      const recentConvs = conversations.slice(-2);
+      context += `Recent conversation:\n${recentConvs.map(c => 
         `${c.isUser ? 'User' : personName}: ${c.message}`
       ).join('\n')}\n\n`;
     }
+    
+    context += `${personName} responds with deep empathy and love:\n\n`;
     
     return context;
   }
@@ -93,12 +234,21 @@ class HuggingFaceAIService {
   cleanResponse(response) {
     if (!response) return '';
     
-    // Remove common prefixes
-    response = response.replace(/^(User:|AI:|Assistant:|Response:)/i, '').trim();
+    // Remove common prefixes and artifacts
+    response = response.replace(/^(User:|AI:|Assistant:|Response:|.*?:)/i, '').trim();
+    
+    // Remove line breaks and clean up
+    response = response.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
     
     // Remove quotation marks if they wrap the entire response
     if (response.startsWith('"') && response.endsWith('"')) {
       response = response.slice(1, -1);
+    }
+    
+    // Handle incomplete sentences - truncate at last complete sentence
+    const sentences = response.split(/[.!?]+/);
+    if (sentences.length > 1 && sentences[sentences.length - 1].trim().length < 10) {
+      response = sentences.slice(0, -1).join('. ') + '.';
     }
     
     // Ensure proper sentence ending

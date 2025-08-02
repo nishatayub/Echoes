@@ -112,7 +112,7 @@ const Register: React.FC = () => {
       <div className="container px-4">
         <div className="row justify-content-center">
           <div className="col-md-10 col-lg-8 col-xl-6">
-            <div className="text-center mb-3 animate-fadeIn">
+            <div className="text-center mb-3            GROQ_API_KEY=your_actual_groq_key_here animate-fadeIn">
               <Link to="/" className="text-decoration-none">
                 <h1 className="display-5 fw-bold mb-3" style={{ 
                   color: '#2c2c2c', 
