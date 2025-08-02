@@ -1,9 +1,6 @@
 # 🌟 Echoes - AI-Powered Grief Companion & Healing Platform
 
 <div align="center">
-
-![Echoes Banner](https://img.shields.io/badge/Echoes-AI%20Companion-blue?style=for-the-badge&logo=react)
-
 **A compassionate AI companion that helps people find closure and healing through personalized conversations**
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-success?style=for-the-badge)](https://echoes-beta.vercel.app)
@@ -17,21 +14,6 @@
 ![AI](https://img.shields.io/badge/AI_Powered-Groq_API-FF6B6B?style=flat&logo=openai&logoColor=white)
 
 </div>
-
----
-
-## 📋 Table of Contents
-- [🎯 Project Overview](#-project-overview)
-- [✨ Key Features](#-key-features)
-- [🛠️ Technical Stack](#️-technical-stack)
-- [🏗️ Architecture](#️-architecture)
-- [🚀 Live Demo](#-live-demo)
-- [💻 Local Development](#-local-development)
-- [🤖 AI Implementation](#-ai-implementation)
-- [📱 Screenshots](#-screenshots)
-- [🔧 Technical Highlights](#-technical-highlights)
-- [📈 Performance](#-performance)
-- [🤝 Contributing](#-contributing)
 
 ---
 
@@ -339,15 +321,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
-
-## 👨‍💻 About the Developer
-
-**Nishat Ayub** - Full Stack Developer & AI Enthusiast
-
-- 🔗 **LinkedIn**: [linkedin.com/in/nishatayub](https://linkedin.com/in/nishatayub)
-- 🐱 **GitHub**: [github.com/nishatayub](https://github.com/nishatayub)
-- 📧 **Email**: nishatayub09@icloud.com
-- 🌐 **Portfolio**: [https://nishatayub.vercel.app]
 
 ### **Skills Demonstrated**
 - Full-stack web development (React, Node.js, MongoDB)
