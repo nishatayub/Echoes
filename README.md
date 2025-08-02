@@ -321,42 +321,6 @@ class AIService {
 
 ---
 
-## 📈 Performance
-
-### **Frontend Metrics**
-- ⚡ **Lighthouse Score**: 95+ Performance
-- 🎯 **Core Web Vitals**: All metrics in green
-- 📱 **Mobile Responsive**: Optimized for all devices
-- ♿ **Accessibility**: WCAG 2.1 AA compliant
-
-### **Backend Performance**
-- 🚀 **Response Time**: < 200ms average
-- 📊 **Concurrent Users**: Handles 100+ simultaneous users
-- 🔄 **API Uptime**: 99.9% availability
-- 💾 **Database**: Optimized queries with proper indexing
-
----
-
-## 📱 Screenshots
-
-<div align="center">
-
-### **Landing Page**
-![Landing](https://via.placeholder.com/800x400/20232A/61DAFB?text=Echoes+Landing+Page)
-
-### **Chat Interface**
-![Chat](https://via.placeholder.com/800x400/20232A/61DAFB?text=AI+Chat+Interface)
-
-### **Memory Builder**
-![Memory](https://via.placeholder.com/800x400/20232A/61DAFB?text=Memory+Builder)
-
-### **Final Letter**
-![Letter](https://via.placeholder.com/800x400/20232A/61DAFB?text=Personalized+Letter)
-
-</div>
-
----
-
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
@@ -382,8 +346,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🔗 **LinkedIn**: [linkedin.com/in/nishatayub](https://linkedin.com/in/nishatayub)
 - 🐱 **GitHub**: [github.com/nishatayub](https://github.com/nishatayub)
-- 📧 **Email**: nishatayub702@gmail.com
-- 🌐 **Portfolio**: [Your Portfolio URL]
+- 📧 **Email**: nishatayub09@icloud.com
+- 🌐 **Portfolio**: [https://nishatayub.vercel.app]
 
 ### **Skills Demonstrated**
 - Full-stack web development (React, Node.js, MongoDB)
