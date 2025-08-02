@@ -21,6 +21,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Add custom styles
@@ -167,6 +168,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     const userMessage = currentMessage;
     setCurrentMessage('');
+    setError(''); // Clear any previous errors
     
     try {
       console.log('Sending message:', userMessage);
@@ -191,20 +193,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (aiResponse?.response) {
         await onSendMessage(aiResponse.response, false);
       } else {
-        // Fallback response if AI response is empty
-        await onSendMessage(
-          `I'm here with you. Please tell me more about ${personName}.`, 
-          false
-        );
+        // If no response received, show error but don't add fake message
+        console.error('No AI response received');
+        setError('Failed to get AI response. Please try again.');
       }
       
     } catch (error) {
       console.error('Error in sendMessage:', error);
-      // Add fallback response on error
-      await onSendMessage(
-        `I'm here with you. Please tell me more about ${personName}.`, 
-        false
-      );
+      // Don't add fallback messages - let user try again
+      setError('Failed to send message. Please try again.');
     } finally {
       setSending(false);
     }
@@ -248,6 +245,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="alert alert-danger mx-3 mb-0" role="alert" style={{ backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '8px' }}>
+          {error}
+          <button 
+            type="button" 
+            className="btn-close float-end" 
+            onClick={() => setError('')}
+            style={{ fontSize: '0.8rem' }}
+          ></button>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="chat-input-area">

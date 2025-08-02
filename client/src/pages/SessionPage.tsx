@@ -173,8 +173,10 @@ const SessionPage: React.FC = () => {
     if (!session || !id) return;
     
     try {
-      const updatedSession = await sessionAPI.updateSession(id, updatedData);
-      setSession(updatedSession);
+      // Save to backend but DON'T overwrite local state
+      await sessionAPI.updateSession(id, updatedData);
+      // Local state is already updated in addMessage, addMemory, etc.
+      // No need to setSession here as it would overwrite our current state
     } catch {
       setError('Failed to save changes');
     }
@@ -201,6 +203,18 @@ const SessionPage: React.FC = () => {
       timestamp: new Date().toISOString()
     };
     
+    // Check if message already exists to prevent duplicates
+    const messageExists = session.conversations.some(conv => 
+      conv.message === message && 
+      conv.isUser === isUser && 
+      Math.abs(new Date(conv.timestamp).getTime() - new Date(newConversation.timestamp).getTime()) < 5000
+    );
+    
+    if (messageExists) {
+      console.log('Message already exists, skipping duplicate');
+      return;
+    }
+    
     const updatedConversations = [...session.conversations, newConversation];
     
     // Update session state immediately for better UX
@@ -209,7 +223,7 @@ const SessionPage: React.FC = () => {
       conversations: updatedConversations
     } : null);
     
-    // Save to backend
+    // Save to backend (but don't overwrite local state)
     await saveSession({ conversations: updatedConversations });
   };
 
