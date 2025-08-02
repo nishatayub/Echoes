@@ -17,7 +17,6 @@ const SessionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState<SessionStep>('memory');
-  const [saving, setSaving] = useState(false);
 
   // Add custom styles
   useEffect(() => {
@@ -173,14 +172,11 @@ const SessionPage: React.FC = () => {
   const saveSession = async (updatedData: { memories?: Memory[]; conversations?: Conversation[]; finalLetter?: string }) => {
     if (!session || !id) return;
     
-    setSaving(true);
     try {
       const updatedSession = await sessionAPI.updateSession(id, updatedData);
       setSession(updatedSession);
     } catch {
       setError('Failed to save changes');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -264,21 +260,7 @@ const SessionPage: React.FC = () => {
         showBackButton={true} 
         backLink="/dashboard"
         title={session ? `Conversation with ${session.personName}` : ''}
-      >
-        <button className="btn btn-chat-memory me-2" onClick={() => setCurrentStep('memory')}>
-          <FaFeatherAlt className="me-2" />
-          Memories
-        </button>
-        <button className="btn btn-chat-letter me-2" onClick={() => setCurrentStep('letter')}>
-          <FaEnvelope className="me-2" />
-          Letter
-        </button>
-        {saving && (
-          <div className="spinner-border spinner-border-sm ms-3" style={{ color: '#2c2c2c' }} role="status">
-            <span className="visually-hidden">Saving...</span>
-          </div>
-        )}
-      </AppHeader>
+      />
 
       {/* Progress Steps */}
       <div className="progress-steps">
