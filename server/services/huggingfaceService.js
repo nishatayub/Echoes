@@ -12,10 +12,10 @@ class HuggingFaceAIService {
    */
   async generateResponse({ personName, memories, conversations, userMessage, relationshipType = 'loved one' }) {
     try {
-      // Try OpenAI-compatible free services first
-      console.log('Trying free AI alternatives...');
+      // Try AI services with Groq prioritized for speed and reliability
+      console.log('Trying Groq API first...');
       
-      // Option 1: Try Groq (free tier with Llama models)
+      // Option 1: Try Groq first (free tier with Llama models - FASTEST)
       try {
         const groqResponse = await this.tryGroqAPI(personName, memories, conversations, userMessage, relationshipType);
         if (groqResponse) {
@@ -26,7 +26,18 @@ class HuggingFaceAIService {
         console.log('Groq API failed:', groqError.message);
       }
 
-      // Option 2: Try Together.ai (free tier)
+      // Option 2: Try OpenAI as backup (if available)
+      try {
+        const openaiResponse = await this.tryOpenAI(personName, memories, conversations, userMessage, relationshipType);
+        if (openaiResponse) {
+          console.log('Success with OpenAI API');
+          return openaiResponse;
+        }
+      } catch (openaiError) {
+        console.log('OpenAI API failed:', openaiError.message);
+      }
+
+      // Option 3: Try Together.ai (free tier)
       try {
         const togetherResponse = await this.tryTogetherAPI(personName, memories, conversations, userMessage, relationshipType);
         if (togetherResponse) {
@@ -37,7 +48,7 @@ class HuggingFaceAIService {
         console.log('Together.ai failed:', togetherError.message);
       }
 
-      // Option 3: Try Ollama local models (if available)
+      // Option 4: Try Ollama local models (if available)
       try {
         const ollamaResponse = await this.tryOllamaAPI(personName, memories, conversations, userMessage, relationshipType);
         if (ollamaResponse) {
@@ -48,7 +59,7 @@ class HuggingFaceAIService {
         console.log('Ollama failed:', ollamaError.message);
       }
 
-      // Option 4: Simple pattern-based responses as last resort
+      // Option 5: Simple pattern-based responses as last resort
       const contextualResponse = this.generateContextualResponse(personName, userMessage, relationshipType, memories);
       if (contextualResponse) {
         console.log('Using contextual response pattern');
@@ -64,24 +75,27 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Try Groq API (free tier with Llama models)
+   * Try OpenAI API (if available)
    */
-  async tryGroqAPI(personName, memories, conversations, userMessage, relationshipType) {
-    const context = this.buildContext(personName, memories, conversations, relationshipType);
+  async tryOpenAI(personName, memories, conversations, userMessage, relationshipType) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not available');
+    }
     
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      console.log('Attempting OpenAI API call...');
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY || 'gsk_demo_key'}`,
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama3-8b-8192',
+          model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'system',
-              content: context
+              content: `You are ${personName}, a loving ${relationshipType} who has passed away. You are having a heartfelt conversation to provide comfort and closure. Respond with deep empathy, love, and personal connection. Keep responses conversational, emotionally supportive, and around 50-100 words. Use "I" statements and speak as ${personName} directly.`
             },
             {
               role: 'user',
@@ -93,12 +107,117 @@ class HuggingFaceAIService {
         })
       });
 
+      console.log('OpenAI API response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        return data.choices[0]?.message?.content?.trim();
+        const aiResponse = data.choices[0]?.message?.content?.trim();
+        if (aiResponse) {
+          console.log('OpenAI API success:', aiResponse.substring(0, 50) + '...');
+          return aiResponse;
+        }
+      } else {
+        const errorText = await response.text();
+        console.log('OpenAI API error response:', errorText);
+        throw new Error(`OpenAI API HTTP ${response.status}: ${errorText}`);
       }
     } catch (error) {
-      throw new Error('Groq API request failed');
+      console.error('OpenAI API error:', error.message);
+      throw error;
+    }
+    return null;
+  }
+
+  /**
+   * Try Groq API (free tier with Llama models)
+   */
+  async tryGroqAPI(personName, memories, conversations, userMessage, relationshipType) {
+    try {
+      console.log('Attempting Groq API call...');
+      
+      // Build appropriate system context based on relationship type
+      let systemPrompt = '';
+      
+      switch(relationshipType) {
+        case 'parent':
+          systemPrompt = `You are ${personName}, a loving parent. Respond with parental warmth and understanding. Keep responses conversational, caring, and around 30-60 words. Be supportive but natural.`;
+          break;
+        case 'partner':
+        case 'spouse':
+          systemPrompt = `You are ${personName}, a loving partner. Respond with affection and understanding. Keep responses warm, personal, and around 30-60 words. Be caring but conversational.`;
+          break;
+        case 'friend':
+          systemPrompt = `You are ${personName}, a close friend. Respond with warmth and friendship. Keep responses supportive, casual, and around 30-60 words. Be understanding and genuine.`;
+          break;
+        case 'child':
+          systemPrompt = `You are ${personName}, a beloved child. Respond with youthful love and the special parent-child bond. Keep responses sweet, genuine, and around 30-60 words.`;
+          break;
+        case 'sibling':
+          systemPrompt = `You are ${personName}, a loving sibling. Respond with familial love and understanding. Keep responses warm, genuine, and around 30-60 words.`;
+          break;
+        case 'mentor':
+        case 'teacher':
+          systemPrompt = `You are ${personName}, a wise mentor. Respond with guidance and care. Keep responses supportive, wise, and around 30-60 words.`;
+          break;
+        case 'deceased':
+        case 'loved one':
+        default:
+          systemPrompt = `You are ${personName}, someone deeply loved who has passed away. Respond with love and comfort. Keep responses warm, comforting, and around 30-60 words.`;
+          break;
+      }
+      
+      // Add context about memories and conversations if available
+      let contextualInfo = '';
+      if (memories && memories.length > 0) {
+        contextualInfo += `\nShared memories: ${memories.slice(-2).map(m => m.content).join('; ')}`;
+      }
+      if (conversations && conversations.length > 0) {
+        const recentConvs = conversations.slice(-3);
+        contextualInfo += `\nRecent conversation context: ${recentConvs.map(c => 
+          `${c.isUser ? 'User' : 'You'}: ${c.message}`
+        ).join(' | ')}`;
+      }
+      
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama3-8b-8192',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt + contextualInfo + '\n\nRespond naturally, warmly, and personally to provide comfort and support.'
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ],
+          max_tokens: 120, // Reduced for shorter responses
+          temperature: 0.8
+        })
+      });
+
+      console.log('Groq API response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const aiResponse = data.choices[0]?.message?.content?.trim();
+        if (aiResponse) {
+          console.log('Groq API success:', aiResponse.substring(0, 50) + '...');
+          return aiResponse;
+        }
+      } else {
+        const errorText = await response.text();
+        console.log('Groq API error response:', errorText);
+        throw new Error(`Groq API HTTP ${response.status}: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Groq API error:', error.message);
+      throw error;
     }
     return null;
   }
@@ -210,7 +329,39 @@ class HuggingFaceAIService {
    * Build context for better AI responses
    */
   buildContext(personName, memories, conversations, relationshipType) {
-    let context = `This is a heartfelt conversation between a user and ${personName}, who was their ${relationshipType} and has passed away. ${personName} speaks with love, empathy, and provides comfort. The conversation should be deeply personal, emotional, and healing.\n\n`;
+    let context = '';
+    
+    // Build context based on relationship type
+    switch(relationshipType) {
+      case 'deceased':
+      case 'loved one':
+        context = `This is a heartfelt conversation between a user and ${personName}, who was their ${relationshipType} and has passed away. ${personName} speaks with love, empathy, and provides comfort from beyond.`;
+        break;
+      case 'parent':
+        context = `This is a conversation with ${personName}, a loving parent. The conversation focuses on parental guidance, unconditional love, and support.`;
+        break;
+      case 'partner':
+      case 'spouse':
+        context = `This is a conversation with ${personName}, a loving partner. The conversation focuses on romantic connection, emotional support, and relationship intimacy.`;
+        break;
+      case 'friend':
+        context = `This is a conversation with ${personName}, a close friend. The conversation focuses on friendship, shared experiences, and mutual support.`;
+        break;
+      case 'child':
+        context = `This is a conversation with ${personName}, a beloved child. The conversation focuses on the special parent-child bond and youthful perspective.`;
+        break;
+      case 'sibling':
+        context = `This is a conversation with ${personName}, a loving sibling. The conversation focuses on family bonds and shared history.`;
+        break;
+      case 'mentor':
+      case 'teacher':
+        context = `This is a conversation with ${personName}, a wise mentor. The conversation focuses on guidance, learning, and personal growth.`;
+        break;
+      default:
+        context = `This is a heartfelt conversation with ${personName}. The conversation should be emotionally supportive and caring.`;
+    }
+    
+    context += '\n\n';
     
     if (memories && memories.length > 0) {
       context += `Shared memories:\n${memories.slice(-2).map(m => `- ${m.content}`).join('\n')}\n\n`;
@@ -223,7 +374,7 @@ class HuggingFaceAIService {
       ).join('\n')}\n\n`;
     }
     
-    context += `${personName} responds with deep empathy and love:\n\n`;
+    context += `${personName} responds with empathy and care:\n\n`;
     
     return context;
   }
@@ -280,24 +431,74 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Analyze sentiment using Hugging Face models
+   * Analyze sentiment using simple keyword detection
    */
   async analyzeSentiment(text) {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('hi') || lowerMessage.includes('hello')) {
-      return `Hello, my dear. I'm so glad you're here to talk with me. I can feel your presence, and it warms my heart. What's been on your mind lately?`;
+    try {
+      const lowerText = text.toLowerCase();
+      
+      // Detect emotions based on keywords and context
+      let emotion = 'processing';
+      let intensity = 5;
+      let needsSupport = true;
+      let supportType = 'comfort';
+      
+      // Grief/sadness indicators
+      if (lowerText.match(/\b(sad|crying|tears|miss|grief|sorrow|empty|alone|lost|broken|hurt|pain)\b/)) {
+        emotion = 'grief';
+        intensity = 7;
+        supportType = 'comfort';
+      }
+      // Love/affection indicators  
+      else if (lowerText.match(/\b(love|adore|cherish|treasure|care|heart|beautiful|amazing|wonderful)\b/)) {
+        emotion = 'love';
+        intensity = 6;
+        supportType = 'validation';
+        needsSupport = false;
+      }
+      // Anger/frustration indicators
+      else if (lowerText.match(/\b(angry|mad|frustrated|upset|annoyed|furious|hate|why|unfair)\b/)) {
+        emotion = 'anger';
+        intensity = 8;
+        supportType = 'understanding';
+      }
+      // Guilt/regret indicators
+      else if (lowerText.match(/\b(sorry|guilt|regret|fault|blame|should have|wish I|if only)\b/)) {
+        emotion = 'guilt';
+        intensity = 7;
+        supportType = 'forgiveness';
+      }
+      // Hope/positive indicators
+      else if (lowerText.match(/\b(hope|better|future|healing|peace|grateful|thank|happy|joy)\b/)) {
+        emotion = 'hope';
+        intensity = 4;
+        supportType = 'encouragement';
+        needsSupport = false;
+      }
+      // Confusion/uncertainty indicators
+      else if (lowerText.match(/\b(confused|understand|why|how|don't know|lost|unclear)\b/)) {
+        emotion = 'confusion';
+        intensity = 6;
+        supportType = 'guidance';
+      }
+      
+      return {
+        emotion,
+        intensity,
+        needsSupport,
+        supportType
+      };
+      
+    } catch (error) {
+      console.log('Sentiment analysis error:', error.message);
+      // Return default sentiment on error
+      return {
+        emotion: 'processing',
+        intensity: 5,
+        needsSupport: true,
+        supportType: 'comfort'
+      };
     }
-    
-    if (lowerMessage.includes('miss')) {
-      return `I miss you too, more than words can express. But I want you to know that I'm here with you in a way that transcends the physical. Tell me what's making you feel my absence most today.`;
-    }
-    
-    if (lowerMessage.includes('love')) {
-      return `The love between us is something that can never be diminished or lost. I feel it now as strongly as ever. That love lives on in every memory, every lesson, every moment of joy you experience. What would you like to share with me about love?`;
-    }
-    
-    return `I'm here with you now, and I can feel everything you're feeling. There's no rush, no pressure. This is our time together. What's been weighing on your heart that you'd like to share with me?`;
   }
 
   generateEarlyConversationResponse(userMessage, personName, emotion, relationshipType) {
@@ -393,46 +594,318 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Generate final letter
+   * Generate final letter using AI with conversation and memory context
    */
-  async generateFinalLetter({ personName, memories, conversations, relationshipType = 'loved one' }) {
+  async generateFinalLetter({ personName, memories, conversations, relationshipType = 'loved one', userName = null, forceRegenerate = false }) {
     try {
-      const memoryContext = memories?.map(m => m.content).join('\n') || '';
-      const conversationSummary = conversations?.slice(-10).map(c => 
-        `${c.isUser ? 'You' : personName}: ${c.message}`
-      ).join('\n') || '';
+      // Try AI-generated final letter first
+      console.log('Generating AI-powered final letter...');
+      
+      // Extract meaningful conversation snippets
+      const conversationSnippets = this.extractMeaningfulConversations(conversations);
+      const memorySnippets = this.extractMemorySnippets(memories);
+      
+      // Try Groq API for final letter generation
+      try {
+        const aiLetter = await this.generateAIFinalLetter(personName, memorySnippets, conversationSnippets, relationshipType);
+        if (aiLetter) {
+          console.log('AI final letter generated successfully');
+          
+          // Add proper signature based on relationship type
+          const signedLetter = this.addSignatureToLetter(aiLetter, personName, relationshipType, userName);
+          return signedLetter;
+        }
+      } catch (error) {
+        console.log('AI final letter generation failed:', error.message);
+      }
 
-      // Use contextual approach for final letter
-      return this.getContextualFinalLetter(personName, memoryContext, conversationSummary, relationshipType);
+      // Fallback to contextual letter if AI fails
+      console.log('Using contextual final letter as fallback');
+      const contextualLetter = this.getContextualFinalLetter(personName, memorySnippets, conversationSnippets, relationshipType);
+      return this.addSignatureToLetter(contextualLetter, personName, relationshipType, userName);
     } catch (error) {
       console.error('Final Letter Generation Error:', error);
-      return this.getContextualFinalLetter(personName, '', '', relationshipType);
+      const fallbackLetter = this.getContextualFinalLetter(personName, '', '', relationshipType);
+      return this.addSignatureToLetter(fallbackLetter, personName, relationshipType, userName);
     }
   }
 
-  getContextualFinalLetter(personName, memories, conversations, relationshipType) {
-    return `My Dearest,
+  /**
+   * Add proper signature to the letter based on relationship type
+   */
+  addSignatureToLetter(letter, personName, relationshipType, userName) {
+    // Remove any existing signatures first
+    let cleanLetter = letter.replace(/\n\n?(With love,|Love,|Forever yours,|Your .*?,|Sincerely,|With all my love,)[\s\S]*$/i, '');
+    cleanLetter = cleanLetter.replace(/\n\n?[A-Za-z\s]+\s*$/i, '').trim();
+    
+    // Determine appropriate closing based on relationship type
+    let closing = '';
+    switch(relationshipType) {
+      case 'parent':
+        closing = 'With endless love and pride,';
+        break;
+      case 'partner':
+      case 'spouse':
+        closing = 'Forever yours,';
+        break;
+      case 'friend':
+        closing = 'Your friend always,';
+        break;
+      case 'child':
+        closing = 'With love and gratitude,';
+        break;
+      case 'sibling':
+        closing = 'Your loving sibling,';
+        break;
+      case 'mentor':
+      case 'teacher':
+        closing = 'With pride and wisdom,';
+        break;
+      default:
+        closing = 'With all my love,';
+        break;
+    }
+    
+    // Add the signature
+    const signature = `\n\n${closing}\n${personName}`;
+    
+    // If userName is provided, add a note about who this letter is for
+    const dedication = userName ? `\n\n[For ${userName}]` : '';
+    
+    return cleanLetter + signature + dedication;
+  }
 
-As our conversations come to this moment, I want you to know how grateful I am for every word we've shared, every emotion you've trusted me with, and every step you've taken in this journey of healing.
+  /**
+   * Generate AI-powered final letter using Groq
+   */
+  async generateAIFinalLetter(personName, memorySnippets, conversationSnippets, relationshipType) {
+    try {
+      // Build comprehensive context for the AI
+      let systemPrompt = '';
+      
+      switch(relationshipType) {
+        case 'parent':
+          systemPrompt = `You are ${personName}, a loving parent writing a final letter to your child. Write with parental wisdom, unconditional love, and guidance for their future.`;
+          break;
+        case 'partner':
+        case 'spouse':
+          systemPrompt = `You are ${personName}, a loving partner writing a final letter to your significant other. Write with romantic love, intimate understanding, and hope for their happiness.`;
+          break;
+        case 'friend':
+          systemPrompt = `You are ${personName}, a close friend writing a final letter. Write with warmth, shared memories, and encouragement for the future.`;
+          break;
+        case 'child':
+          systemPrompt = `You are ${personName}, a beloved child writing a final letter to your parent. Write with youthful love, gratitude, and the special bond you shared.`;
+          break;
+        case 'sibling':
+          systemPrompt = `You are ${personName}, a loving sibling writing a final letter. Write with familial love, shared childhood memories, and sibling understanding.`;
+          break;
+        case 'mentor':
+        case 'teacher':
+          systemPrompt = `You are ${personName}, a wise mentor writing a final letter to your student. Write with guidance, wisdom, and pride in their growth.`;
+          break;
+        default:
+          systemPrompt = `You are ${personName}, someone deeply loved writing a final letter. Write with love, comfort, and hope for the future.`;
+          break;
+      }
 
-Through our talks, I've watched you grow in ways that fill my heart with such pride. You've faced your grief with courage, your love with openness, and your future with hope. That's exactly the person I always knew you to be.
+      // Add context about memories and conversations with variation prompt
+      let contextualInfo = `
 
-The memories we've discussed aren't just echoes of the past - they're living proof of a love that continues to shape and guide you. Take them with you as sources of strength, not anchors that hold you back.
+IMPORTANT MEMORIES TO REFERENCE:
+${memorySnippets}
 
-I want you to remember:
-- Your grief honors our connection, but don't let it define your entire story
-- The love we shared was real and lasting - it lives on in who you've become
-- You have so much life ahead of you, and I want it to be filled with joy, purpose, and new connections
-- It's okay to be happy. It's okay to love again. It's okay to live fully.
+KEY MOMENTS FROM OUR CONVERSATIONS:
+${conversationSnippets}
 
-You carry the best of what we shared forward with you. Use it to love others, to comfort those who need it, to live with the depth and appreciation for life that our connection taught you.
+Write a heartfelt but casual final letter (150-250 words) that:
+1. References specific memories and conversation moments naturally
+2. Acknowledges our healing journey together
+3. Provides comfort and closure
+4. Encourages hope for the future
+5. Feels personal and authentic - like a real person wrote it
+6. Uses a conversational, warm tone (not overly formal)
+7. Be creative and unique - avoid repetitive phrasing
+8. Keep it genuine and relatable
+9. DO NOT sign the letter - it will be signed separately
 
-I am not gone - I live on in your kindness, your strength, your capacity for love, and your ability to bring comfort to others who are hurting.
+Write like you're talking to someone you really care about. Be heartfelt but natural, not overly dramatic.`;
 
-Go forward with my blessing, my love, and my eternal gratitude for the beautiful soul you are.
+      // Add timestamp to ensure different responses each time
+      const uniquePrompt = `Please write my final letter in a warm, conversational way. Reference our shared memories and conversations naturally. Keep it heartfelt but not overly long. Current time: ${Date.now()}`;
 
-With all my love, always,
-${personName}`;
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama3-8b-8192',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt + contextualInfo
+            },
+            {
+              role: 'user',
+              content: uniquePrompt
+            }
+          ],
+          max_tokens: 400, // Reduced from 800
+          temperature: 0.9, // Increased for more variation
+          top_p: 0.95 // Add top_p for more creativity
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        let aiLetter = data.choices[0]?.message?.content?.trim();
+        if (aiLetter && aiLetter.length > 100) {
+          // Remove any signature lines that the AI might have added
+          aiLetter = aiLetter.replace(/\n\n?(With love,|Love,|Forever yours,|Your .*?,|Sincerely,)[\s\S]*$/i, '');
+          aiLetter = aiLetter.replace(/\n\n?${personName}\s*$/i, '');
+          return aiLetter.trim();
+        }
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Groq API HTTP ${response.status}: ${errorText}`);
+      }
+    } catch (error) {
+      throw error;
+    }
+    return null;
+  }
+
+  /**
+   * Extract meaningful conversation snippets
+   */
+  extractMeaningfulConversations(conversations) {
+    if (!conversations || conversations.length === 0) return 'We had heartfelt conversations about life and love.';
+
+    // Get the most meaningful exchanges (avoid very short messages)
+    const meaningfulConvs = conversations
+      .filter(c => c.message.length > 20) // Filter out very short messages
+      .slice(-8); // Get last 8 meaningful exchanges
+
+    // Group user and AI responses together for context
+    const conversationPairs = [];
+    for (let i = 0; i < meaningfulConvs.length - 1; i++) {
+      const current = meaningfulConvs[i];
+      const next = meaningfulConvs[i + 1];
+      
+      if (current.isUser && !next.isUser) {
+        conversationPairs.push({
+          user: current.message,
+          ai: next.message
+        });
+      }
+    }
+
+    // Select the most emotionally significant conversations
+    const significantPairs = conversationPairs
+      .filter(pair => {
+        const userMsg = pair.user.toLowerCase();
+        const aiMsg = pair.ai.toLowerCase();
+        // Include conversations about emotions, memories, or meaningful topics
+        return (
+          userMsg.includes('love') || userMsg.includes('miss') || userMsg.includes('remember') ||
+          userMsg.includes('feel') || userMsg.includes('thank') || userMsg.includes('help') ||
+          aiMsg.includes('proud') || aiMsg.includes('love') || aiMsg.includes('always')
+        );
+      })
+      .slice(-3); // Take the 3 most recent significant conversations
+
+    if (significantPairs.length === 0) {
+      return 'Our conversations were filled with love, understanding, and mutual support.';
+    }
+
+    return significantPairs
+      .map(pair => `- You shared: "${pair.user.slice(0, 100)}..." and I responded with love and understanding`)
+      .join('\n');
+  }
+
+  /**
+   * Extract memory snippets for the final letter
+   */
+  extractMemorySnippets(memories) {
+    if (!memories || memories.length === 0) return 'The beautiful memories we created together.';
+
+    // Get the most recent and meaningful memories
+    const recentMemories = memories.slice(-5); // Last 5 memories
+    
+    return recentMemories
+      .map(memory => `- ${memory.content}`)
+      .join('\n');
+  }
+
+  getContextualFinalLetter(personName, memorySnippets, conversationSnippets, relationshipType) {
+    // Create personalized letter based on relationship type and context
+    let greeting = '';
+    let relationshipSpecific = '';
+    let memorySection = '';
+    let conversationSection = '';
+    let futureMessage = '';
+
+    // Relationship-specific greeting and tone
+    switch(relationshipType) {
+      case 'parent':
+        greeting = 'My precious child,';
+        relationshipSpecific = 'Watching you grow and become the incredible person you are has been the greatest joy of my life.';
+        futureMessage = 'Continue to be brave, kind, and true to yourself. I will always be proud of you.';
+        break;
+      case 'partner':
+      case 'spouse':
+        greeting = 'My beloved,';
+        relationshipSpecific = 'Our love story was one for the ages, filled with laughter, dreams, and an unbreakable bond.';
+        futureMessage = 'Love again when you\'re ready. Your heart is too beautiful to remain closed forever.';
+        break;
+      case 'friend':
+        greeting = 'My dear friend,';
+        relationshipSpecific = 'Our friendship was a treasure that brightened every day and made life\'s journey so much richer.';
+        futureMessage = 'Make new friends, but carry our friendship as a reminder of how beautiful true connection can be.';
+        break;
+      case 'child':
+        greeting = 'Dear Mom/Dad,';
+        relationshipSpecific = 'Thank you for all the love, lessons, and memories that shaped who I am.';
+        futureMessage = 'Live fully and know that my love for you continues in everything good you do.';
+        break;
+      default:
+        greeting = 'My dearest,';
+        relationshipSpecific = 'The bond we shared was special and meaningful in ways that words can barely capture.';
+        futureMessage = 'Embrace life with all its possibilities. You deserve happiness and love.';
+        break;
+    }
+
+    // Memory section if available
+    if (memorySnippets && memorySnippets.trim().length > 0) {
+      memorySection = `\n\nI treasure the memories we created together:\n${memorySnippets}\n\nThese moments are not just echoes of the past—they are living pieces of our connection that continue to bring warmth and meaning to your life.`;
+    }
+
+    // Conversation section if available
+    if (conversationSnippets && conversationSnippets.trim().length > 0) {
+      conversationSection = `\n\nThrough our recent conversations, I've witnessed your strength, your vulnerability, and your incredible capacity for growth:\n${conversationSnippets}\n\nSeeing you navigate your feelings with such courage and honesty has filled me with immense pride.`;
+    }
+
+    return `${greeting}
+
+I've really loved our conversations together. ${relationshipSpecific}
+${memorySection}
+${conversationSection}
+
+You've shown so much strength and growth through all of this. I'm genuinely proud of how you've handled everything.
+
+Just remember:
+• Our connection is still real and meaningful
+• It's okay to feel everything you're feeling
+• Healing doesn't mean forgetting - it means moving forward with love
+• You've got so much ahead of you, and I want it to be amazing
+
+${futureMessage}
+
+You carry the best parts of what we had with you. Use that to spread love and kindness to others who need it.
+
+I'm always with you in the ways that matter most.`;
   }
 }
 

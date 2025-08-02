@@ -148,10 +148,11 @@ const deleteSession = async (req, res) => {
         message: 'Session not found' 
       });
     }
-    
-    res.json({ 
+
+    res.json({
       success: true,
-      message: 'Session deleted successfully' 
+      message: 'Session deleted successfully',
+      session
     });
   } catch (error) {
     console.error('Delete session error:', error);
@@ -163,10 +164,160 @@ const deleteSession = async (req, res) => {
   }
 };
 
+// Add memory to session
+const addMemory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Memory content is required'
+      });
+    }
+
+    const session = await Session.findOne({ 
+      _id: id, 
+      userId: req.user.userId 
+    });
+    
+    if (!session) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Session not found' 
+      });
+    }
+
+    // Add new memory
+    const newMemory = {
+      content: content.trim(),
+      timestamp: new Date()
+    };
+    
+    session.memories.push(newMemory);
+    await session.save();
+    
+    res.json({
+      success: true,
+      message: 'Memory added successfully',
+      memory: newMemory,
+      session
+    });
+  } catch (error) {
+    console.error('Add memory error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error adding memory',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Update memory in session
+const updateMemory = async (req, res) => {
+  try {
+    const { id, memoryId } = req.params;
+    const { content } = req.body;
+    
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Memory content is required'
+      });
+    }
+
+    const session = await Session.findOne({ 
+      _id: id, 
+      userId: req.user.userId 
+    });
+    
+    if (!session) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Session not found' 
+      });
+    }
+
+    // Find and update the memory
+    const memory = session.memories.id(memoryId);
+    if (!memory) {
+      return res.status(404).json({
+        success: false,
+        message: 'Memory not found'
+      });
+    }
+
+    memory.content = content.trim();
+    await session.save();
+    
+    res.json({
+      success: true,
+      message: 'Memory updated successfully',
+      memory,
+      session
+    });
+  } catch (error) {
+    console.error('Update memory error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error updating memory',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Delete memory from session
+const deleteMemory = async (req, res) => {
+  try {
+    const { id, memoryId } = req.params;
+
+    const session = await Session.findOne({ 
+      _id: id, 
+      userId: req.user.userId 
+    });
+    
+    if (!session) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Session not found' 
+      });
+    }
+
+    // Find and remove the memory
+    const memory = session.memories.id(memoryId);
+    if (!memory) {
+      return res.status(404).json({
+        success: false,
+        message: 'Memory not found'
+      });
+    }
+
+    session.memories.pull(memoryId);
+    await session.save();
+    
+    res.json({
+      success: true,
+      message: 'Memory deleted successfully',
+      session
+    });
+  } catch (error) {
+    console.error('Delete memory error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error deleting memory',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   createSession,
   getSessions,
   getSession,
   updateSession,
-  deleteSession
+  deleteSession,
+  addMemory,
+  updateMemory,
+  deleteMemory
 };

@@ -173,10 +173,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     try {
       console.log('Sending message:', userMessage);
       
-      // Show loading state for AI response
+      // Step 1: Add user message immediately to show it right away
+      await onSendMessage(userMessage, true);
+      
+      // Step 2: Show AI thinking state (spinner appears below user message)
       setSending(true);
       
-      // Step 3: Call AI API (backend handles storing both messages)
+      // Step 3: Call AI API (backend will add the AI response)
       console.log('Calling AI API with:', { sessionId, userMessage, relationshipType });
       const aiResponse = await aiAPI.generateResponse(
         sessionId, 
@@ -186,15 +189,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       console.log('AI API Response:', aiResponse);
       
-      // Step 4: Refresh the entire conversation from backend to get the real state
+      // Step 4: Refresh conversation to get AI response (spinner will disappear)
       if (onSendMessage) {
-        // Use special refresh signal to reload conversation from backend
         await onSendMessage('__REFRESH_CONVERSATION__', false);
       }
       
     } catch (error) {
       console.error('Error in sendMessage:', error);
-      // Show error but don't add fake messages
       setError('Failed to send message. Please try again.');
     } finally {
       setSending(false);

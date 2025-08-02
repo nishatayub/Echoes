@@ -37,12 +37,8 @@ const generateResponse = async (req, res) => {
       });
     }
 
-    // Add user message to session FIRST
-    session.conversations.push({
-      message: message,
-      isUser: true,
-      timestamp: new Date()
-    });
+    // Don't add user message here - frontend handles it
+    // The session conversations will be used for context only
 
     // Analyze sentiment using free Hugging Face service
     let sentiment;
@@ -59,18 +55,34 @@ const generateResponse = async (req, res) => {
     }
     console.log('Sentiment analyzed:', sentiment);
 
-    // Generate AI response using free Hugging Face service
+    // Generate AI response using the current conversations for context
     let aiResponse;
     try {
-      console.log('Trying Hugging Face AI...');
+      console.log('Trying AI response generation...');
+      
+      // Map relationship types for better context
+      let mappedRelationshipType = relationshipType || session.relationshipType || 'other';
+      
+      // Map basic relationship types to more specific ones for AI
+      const relationshipMapping = {
+        'family': 'family member',
+        'friend': 'friend', 
+        'partner': 'partner',
+        'pet': 'beloved pet',
+        'mentor': 'mentor',
+        'other': 'loved one'
+      };
+      
+      const contextualRelationship = relationshipMapping[mappedRelationshipType] || mappedRelationshipType;
+      
       aiResponse = await huggingfaceService.generateResponse({
         personName: session.personName,
         memories: session.memories,
-        conversations: session.conversations,
+        conversations: session.conversations, // Use existing conversations for context
         userMessage: message,
-        relationshipType: relationshipType || 'loved one'
+        relationshipType: contextualRelationship
       });
-      console.log('Hugging Face response successful:', aiResponse);
+      console.log('AI response successful:', aiResponse);
       
       // Only proceed if we got a valid AI response
       if (!aiResponse || aiResponse.trim().length === 0) {
@@ -79,9 +91,6 @@ const generateResponse = async (req, res) => {
       
     } catch (error) {
       console.log('AI service failed:', error.message);
-      
-      // Don't add user message to session if AI fails
-      session.conversations.pop(); // Remove the user message we added earlier
       
       return res.status(500).json({
         success: false,
@@ -92,14 +101,15 @@ const generateResponse = async (req, res) => {
     
     console.log('AI Response generated:', aiResponse);
 
-    // Add AI response to conversation history
+    // Add ONLY the AI response to conversation history
+    // (User message was already added by frontend)
     session.conversations.push({
       message: aiResponse,
       isUser: false,
       timestamp: new Date()
     });
 
-    // Save the session with both user message and AI response
+    // Save the session with the AI response
     await session.save();
 
     res.json({
@@ -158,7 +168,7 @@ const getGuidedPrompts = async (req, res) => {
  */
 const generateFinalLetter = async (req, res) => {
   try {
-    const { sessionId, relationshipType } = req.body;
+    const { sessionId, relationshipType, regenerate } = req.body;
 
     if (!sessionId) {
       return res.status(400).json({
@@ -184,32 +194,72 @@ const generateFinalLetter = async (req, res) => {
       });
     }
 
-    // Generate the final letter using free Hugging Face service
-    const finalLetter = await huggingfaceService.generateFinalLetter({
-      personName: session.personName,
-      memories: session.memories,
-      conversations: session.conversations,
-      relationshipType: relationshipType || 'loved one'
-    });
+    // Get user information for the letter
+    const User = require('../models/User');
+    const user = await User.findById(req.user.userId);
+    const userName = user ? user.name : null;
 
-    // Save the final letter to the session
-    session.finalLetter = finalLetter;
-    session.isCompleted = true;
-    await session.save();
+    // If regenerate is true or no final letter exists, generate a new one
+    if (regenerate || !session.finalLetter) {
+      console.log(`${regenerate ? 'Regenerating' : 'Generating'} final letter using AI...`);
+      
+      // Map relationship type for better context
+      let mappedRelationshipType = relationshipType || session.relationshipType || 'other';
+      const relationshipMapping = {
+        'family': 'family member',
+        'friend': 'friend', 
+        'partner': 'partner',
+        'pet': 'beloved pet',
+        'mentor': 'mentor',
+        'other': 'loved one'
+      };
+      const contextualRelationship = relationshipMapping[mappedRelationshipType] || mappedRelationshipType;
 
-    res.json({
-      success: true,
-      data: {
-        finalLetter,
-        session: session
-      }
-    });
+      // Generate the final letter using AI service
+      const finalLetter = await huggingfaceService.generateFinalLetter({
+        personName: session.personName,
+        memories: session.memories,
+        conversations: session.conversations,
+        relationshipType: contextualRelationship,
+        userName: userName,
+        forceRegenerate: regenerate || false
+      });
+
+      // Save the final letter to the session
+      session.finalLetter = finalLetter;
+      session.isCompleted = true;
+      await session.save();
+
+      console.log('Final letter generated and saved successfully');
+
+      res.json({
+        success: true,
+        data: {
+          finalLetter,
+          session: session,
+          isRegenerated: regenerate || false,
+          generatedFor: userName
+        }
+      });
+    } else {
+      // Return existing final letter
+      res.json({
+        success: true,
+        data: {
+          finalLetter: session.finalLetter,
+          session: session,
+          isRegenerated: false,
+          generatedFor: userName
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Generate Final Letter Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to generate final letter'
+      message: 'Failed to generate final letter',
+      error: error.message
     });
   }
 };
