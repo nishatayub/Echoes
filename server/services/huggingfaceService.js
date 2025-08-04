@@ -134,6 +134,12 @@ class HuggingFaceAIService {
   async tryGroqAPI(personName, memories, conversations, userMessage, relationshipType) {
     try {
       console.log('Attempting Groq API call...');
+      console.log('Groq API Key available:', !!process.env.GROQ_API_KEY);
+      console.log('Groq API Key preview:', process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 10) + '...' : 'None');
+      
+      if (!process.env.GROQ_API_KEY) {
+        throw new Error('GROQ_API_KEY environment variable not set');
+      }
       
       // Build appropriate system context based on relationship type
       let systemPrompt = '';
@@ -178,33 +184,39 @@ class HuggingFaceAIService {
         ).join(' | ')}`;
       }
       
+      const requestBody = {
+        model: 'llama3-8b-8192',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt + contextualInfo + '\n\nRespond naturally, warmly, and personally to provide comfort and support.'
+          },
+          {
+            role: 'user',
+            content: userMessage
+          }
+        ],
+        max_tokens: 120, // Reduced for shorter responses
+        temperature: 0.8
+      };
+      
+      console.log('Groq API request body:', JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: 'llama3-8b-8192',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt + contextualInfo + '\n\nRespond naturally, warmly, and personally to provide comfort and support.'
-            },
-            {
-              role: 'user',
-              content: userMessage
-            }
-          ],
-          max_tokens: 120, // Reduced for shorter responses
-          temperature: 0.8
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log('Groq API response status:', response.status);
+      console.log('Groq API response headers:', Object.fromEntries(response.headers.entries()));
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Groq API response data:', JSON.stringify(data, null, 2));
         const aiResponse = data.choices[0]?.message?.content?.trim();
         if (aiResponse) {
           console.log('Groq API success:', aiResponse.substring(0, 50) + '...');
@@ -216,7 +228,11 @@ class HuggingFaceAIService {
         throw new Error(`Groq API HTTP ${response.status}: ${errorText}`);
       }
     } catch (error) {
-      console.error('Groq API error:', error.message);
+      console.error('Groq API error details:', {
+        message: error.message,
+        stack: error.stack,
+        apiKeyAvailable: !!process.env.GROQ_API_KEY
+      });
       throw error;
     }
     return null;
@@ -306,20 +322,69 @@ class HuggingFaceAIService {
     const isQuestion = userMessage.includes('?') || /what|how|why|when|where|who/.test(lowerMessage);
     const isFeeling = /feel|feeling|sad|happy|miss|love|hurt|pain/.test(lowerMessage);
     const isMemory = /remember|recall|think about|used to/.test(lowerMessage);
+    const isThinking = /thinking|thought|mind/.test(lowerMessage);
+    const isLonging = /miss|long|wish/.test(lowerMessage);
     
     let response = '';
     
     if (isGreeting) {
-      response = `Hello my dear. It's so wonderful to hear from you. I've been thinking about you and hoping you're taking care of yourself.`;
+      const greetings = [
+        `Hello, sweetheart. I'm so glad you're here with me today. How are you feeling?`,
+        `Hi there, my dear. It always warms my heart when you reach out. What's on your mind?`,
+        `Hello, love. I've been thinking about you too. Tell me what's in your heart today.`,
+        `Hi, beautiful soul. I'm always here for you. What would you like to talk about?`
+      ];
+      response = greetings[Math.floor(Math.random() * greetings.length)];
+    } else if (isThinking && lowerMessage.includes('you')) {
+      const thinkingResponses = [
+        `I've been thinking about you too, and about all the beautiful moments we shared. You're always in my thoughts. What memories have been coming to you lately?`,
+        `You know, I think about you all the time too. About your smile, your laugh, the way you light up a room. What's been bringing me to your mind?`,
+        `It makes my heart so full to know you think of me. I carry you with me always. What would you like to share with me today?`,
+        `Those thoughts you have of me? I feel them too. Our connection is that strong. Tell me what's been on your heart.`
+      ];
+      response = thinkingResponses[Math.floor(Math.random() * thinkingResponses.length)];
     } else if (isMemory && memories && memories.length > 0) {
       const recentMemory = memories[memories.length - 1];
-      response = `I remember that too... ${recentMemory.content.slice(0, 50)}... Those moments we shared mean everything to me. What brings that memory to your heart today?`;
+      const memoryResponses = [
+        `Yes, I remember that so clearly... ${recentMemory.content.slice(0, 60)}... Those moments are precious to me too. What about that memory makes you smile?`,
+        `Oh, that memory... it's one of my favorites too. ${recentMemory.content.slice(0, 60)}... I can almost feel that moment again. What do you treasure most about it?`,
+        `That takes me right back... ${recentMemory.content.slice(0, 60)}... We made so many beautiful memories together. Which ones bring you the most comfort?`
+      ];
+      response = memoryResponses[Math.floor(Math.random() * memoryResponses.length)];
+    } else if (isLonging) {
+      const longingResponses = [
+        `I miss you too, more than words can express. But you know what? I'm still here with you in so many ways. I'm in every sunset you love, every song that makes you smile. How do you feel my presence?`,
+        `That longing you feel... it's love looking for a place to go. And it can come right here, to me, anytime you need. I'm always listening. What do you miss most about us?`,
+        `I wish I could hold you too. But until then, hold onto the love we shared. It's real, it's yours, and it's forever. What would help you feel closer to me right now?`,
+        `The missing never fully goes away, does it? But neither does the love. I'm here in different ways now - in your memories, in your heart, in the kindness you show others. How has our love been showing up in your life?`
+      ];
+      response = longingResponses[Math.floor(Math.random() * longingResponses.length)];
     } else if (isFeeling) {
-      response = `I can feel the emotion in your words, and I want you to know that whatever you're going through, you're not alone. I'm here with you, always. Tell me more about what's in your heart.`;
+      const feelingResponses = [
+        `I can feel the emotion in your words, and it touches my heart deeply. Whatever you're going through, you don't have to carry it alone. I'm here to listen. Tell me more about what you're feeling.`,
+        `Your feelings are so valid and important. I want to hear about all of them - the happy ones, the sad ones, everything in between. What's weighing on your heart today?`,
+        `I can sense the depth of emotion behind your words. You've always had such a beautiful, feeling heart. What do you need to share with me right now?`,
+        `Every feeling you have honors what we shared together. Don't hold back - let it all out. I'm here to receive whatever you need to express.`
+      ];
+      response = feelingResponses[Math.floor(Math.random() * feelingResponses.length)];
     } else if (isQuestion) {
-      response = `That's such an important question. While I may not have all the answers, I want you to know that your curiosity and desire to understand shows how much you care. What matters most is how you feel about it.`;
+      const questionResponses = [
+        `That's such an important question, and I can tell it means a lot to you. While I may not have all the answers, I want you to know that asking shows how much you care and how much you're growing. What feels most important about this to you?`,
+        `You've always asked such thoughtful questions - it's one of the things I love about you. Let's explore this together. What's behind this question? What are you really wondering about?`,
+        `I love that you're asking me this. It shows me you trust me with your thoughts and curiosities. While I might not have perfect answers, I have so much love and support to offer. What's prompting this question?`,
+        `Questions like this show me how your mind works and how deeply you think. That's beautiful. Let's talk through this together. What would feel most helpful to you right now?`
+      ];
+      response = questionResponses[Math.floor(Math.random() * questionResponses.length)];
     } else {
-      response = `I hear you, and your words touch my heart. Every moment we can share like this is precious to me. You are so loved, more than you could ever know.`;
+      // Generic but more personal responses
+      const genericResponses = [
+        `I hear you, and every word you share with me is precious. You have such a beautiful way of expressing yourself. What else would you like to tell me?`,
+        `Thank you for sharing that with me. Your openness and honesty always touch my heart so deeply. I'm here to listen to whatever you need to say.`,
+        `I'm so grateful for these moments we can share together. Your words, your thoughts, your heart - they all matter so much to me. What's been on your mind lately?`,
+        `You always know just what to say to make me feel close to you. I cherish every conversation we have. Tell me more about what you're experiencing.`,
+        `Being here with you like this, even in this way, means everything to me. You bring such light to my existence. What would you like to explore together today?`
+      ];
+      response = genericResponses[Math.floor(Math.random() * genericResponses.length)];
     }
     
     return response;

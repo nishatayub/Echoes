@@ -163,12 +163,14 @@ const Dashboard: React.FC = () => {
     const timeoutId = setTimeout(() => {
       setLoading(false);
       setError('Request timed out. Please check your connection and try again.');
-    }, 10000); // 10 second timeout
+    }, 15000); // Increased to 15 seconds for slow connections
     
     try {
+      console.log('Fetching sessions from API...');
       const sessionsData = await sessionAPI.getSessions();
-      console.log('Sessions loaded:', sessionsData);
+      console.log('Sessions loaded successfully:', sessionsData.length, 'sessions');
       setSessions(sessionsData);
+      setError(''); // Clear any previous errors
       clearTimeout(timeoutId);
     } catch (err) {
       console.error('Failed to load sessions:', err);
@@ -182,6 +184,8 @@ const Dashboard: React.FC = () => {
         setError('Authentication failed. Please log in again.');
         // Optionally redirect to login
         navigate('/login');
+      } else if (error.response?.status === 500) {
+        setError('Server error. Please try again in a moment.');
       } else if (error.response?.status === 0 || error.code === 'NETWORK_ERROR') {
         setError('Unable to connect to server. Please check your internet connection.');
       } else {

@@ -40,13 +40,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // If token exists but no user, try to fetch user
       if (token && !user) {
-        try {
-          const currentUser = await authAPI.getUser();
-          setUser(currentUser);
-        } catch {
-          // Token is invalid, clear storage
-          console.warn('Token validation failed. Clearing auth.');
-          clearAuth();
+        let retries = 3;
+        let delay = 1000; // Start with 1 second delay
+        
+        while (retries > 0) {
+          try {
+            console.log(`Attempting to validate token... (${4 - retries}/3)`);
+            const currentUser = await authAPI.getUser();
+            setUser(currentUser);
+            console.log('Token validation successful');
+            break;
+          } catch (error) {
+            console.warn(`Token validation attempt ${4 - retries} failed:`, error);
+            retries--;
+            
+            if (retries === 0) {
+              // All retries failed, token is likely invalid
+              console.warn('All token validation attempts failed. Clearing auth.');
+              clearAuth();
+            } else {
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2; // Exponential backoff
+            }
+          }
         }
       }
       

@@ -185,13 +185,21 @@ const SessionPage: React.FC = () => {
   const addMemory = async (content: string) => {
     if (!session) return;
     
-    const newMemory: Memory = {
-      content,
-      timestamp: new Date().toISOString()
-    };
-    
-    const updatedMemories = [...session.memories, newMemory];
-    await saveSession({ memories: updatedMemories });
+    try {
+      // Use the optimized addMemory API endpoint
+      const { memory, session: updatedSession } = await sessionAPI.addMemory(session._id, content);
+      
+      // Update local state with the new memory immediately for better UX
+      setSession(prev => prev ? {
+        ...prev,
+        memories: [...prev.memories, memory],
+        updatedAt: updatedSession.updatedAt
+      } : null);
+      
+    } catch (error) {
+      console.error('Failed to add memory:', error);
+      setError('Failed to add memory. Please try again.');
+    }
   };
 
   const addMessage = async (message: string, isUser: boolean) => {

@@ -29,7 +29,13 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () => set({ user: null, token: null }),
     }),
     {
-      name: 'auth-storage',
+      name: 'echoes-auth-storage',
+      partialize: (state) => ({ 
+        user: state.user, 
+        token: state.token 
+      }),
+      // Add version for future migrations
+      version: 1,
     }
   )
 );

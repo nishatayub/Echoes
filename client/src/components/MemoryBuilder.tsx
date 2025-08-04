@@ -146,6 +146,13 @@ const MemoryBuilder: React.FC<MemoryBuilderProps> = ({
     try {
       await onAddMemory(currentMemory);
       setCurrentMemory('');
+      // Show success feedback briefly
+      setTimeout(() => {
+        // Optional: Add toast notification here
+      }, 100);
+    } catch (error) {
+      console.error('Failed to add memory:', error);
+      // Optional: Add error toast notification here
     } finally {
       setAdding(false);
     }

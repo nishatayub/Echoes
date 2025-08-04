@@ -21,9 +21,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only redirect on 401 if we're not already on auth pages
     if (error.response?.status === 401) {
-      useAuthStore.getState().clearAuth();
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/register') && !currentPath.includes('/')) {
+        console.warn('Authentication failed, redirecting to login');
+        useAuthStore.getState().clearAuth();
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -36,6 +41,7 @@ export interface User {
 }
 
 export interface Memory {
+  _id?: string;
   content: string;
   timestamp: string;
 }
@@ -129,6 +135,28 @@ export const sessionAPI = {
 
   deleteSession: async (id: string): Promise<void> => {
     await api.delete(`/sessions/${id}`);
+  },
+
+  // Optimized memory operations
+  addMemory: async (sessionId: string, content: string): Promise<{ memory: Memory; session: Session }> => {
+    const response = await api.post(`/sessions/${sessionId}/memories`, { content });
+    return {
+      memory: response.data.memory,
+      session: response.data.session
+    };
+  },
+
+  updateMemory: async (sessionId: string, memoryId: string, content: string): Promise<{ memory: Memory; session: Session }> => {
+    const response = await api.put(`/sessions/${sessionId}/memories/${memoryId}`, { content });
+    return {
+      memory: response.data.memory,
+      session: response.data.session
+    };
+  },
+
+  deleteMemory: async (sessionId: string, memoryId: string): Promise<Session> => {
+    const response = await api.delete(`/sessions/${sessionId}/memories/${memoryId}`);
+    return response.data.session;
   },
 };
 
