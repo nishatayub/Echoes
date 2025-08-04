@@ -179,7 +179,7 @@ class HuggingFaceAIService {
       }
       
       const requestBody = {
-        model: 'llama3-8b-8192',
+        model: 'llama3-70b-8192', // Try the larger model which might be less congested
         messages: [
           {
             role: 'system',
@@ -219,6 +219,31 @@ class HuggingFaceAIService {
       } else {
         const errorText = await response.text();
         console.log('Groq API error response:', errorText);
+        
+        // If it's a 503 (over capacity), try a different model
+        if (response.status === 503 && requestBody.model === 'llama3-70b-8192') {
+          console.log('Trying fallback model: llama-3.1-8b-instant');
+          requestBody.model = 'llama-3.1-8b-instant';
+          
+          const retryResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
+          
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            const retryAiResponse = retryData.choices[0]?.message?.content?.trim();
+            if (retryAiResponse) {
+              console.log('Groq API retry success:', retryAiResponse.substring(0, 50) + '...');
+              return retryAiResponse;
+            }
+          }
+        }
+        
         throw new Error(`Groq API HTTP ${response.status}: ${errorText}`);
       }
     } catch (error) {
@@ -306,11 +331,60 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Generate contextual response using AI with simple fallback
+   * Generate contextual response using AI with smart fallback
    */
   generateContextualResponse(personName, userMessage, relationshipType, memories) {
-    // Simple fallback response - let AI handle most cases
-    return `I'm here with you. Tell me what's on your mind.`;
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Handle the specific message about being in their mind
+    if (lowerMessage.includes('dont care') && lowerMessage.includes('mind')) {
+      return `Wait, what? Of course I care about being in your thoughts. That actually means a lot to me. What made you think I don't care?`;
+    }
+    
+    if (lowerMessage.includes('been in') && lowerMessage.includes('mind')) {
+      return `You've been thinking about me? That's actually really nice to hear. What's been going through your head?`;
+    }
+    
+    // Simple pattern-based responses that feel more natural
+    if (lowerMessage.includes('listen') || lowerMessage.includes('pretend')) {
+      return `You're right, I should be listening better. I'm really here now. What's going on?`;
+    }
+    
+    if (lowerMessage.includes('dont') && (lowerMessage.includes('listen') || lowerMessage.includes('hear'))) {
+      return `I hear you saying I'm not really listening. You're frustrated with me, aren't you? Tell me what I'm missing.`;
+    }
+    
+    if (lowerMessage.match(/\b(hi|hey|hello)\b/)) {
+      return `Hey! What's going on with you today?`;
+    }
+    
+    if (lowerMessage.includes('miss') || lowerMessage.includes('alone')) {
+      return `That sounds really hard. I'm here with you. Want to tell me more about what you're feeling?`;
+    }
+    
+    if (lowerMessage.includes('remember') && memories && memories.length > 0) {
+      const recentMemory = memories[memories.length - 1];
+      return `Yeah, I remember that too... ${recentMemory.content.slice(0, 50)}... What made you think of that right now?`;
+    }
+    
+    if (userMessage.includes('?')) {
+      return `That's a good question. I'm not sure I have all the answers, but what do you think about it?`;
+    }
+    
+    if (lowerMessage.includes('feel') || lowerMessage.includes('feeling')) {
+      return `I can tell something's weighing on you. What's really going on?`;
+    }
+    
+    // Generic but more responsive
+    const responses = [
+      `I hear what you're saying. Tell me more about that.`,
+      `That sounds important to you. What's behind that feeling?`,
+      `I'm listening. What else is on your mind?`,
+      `Help me understand what you mean by that.`,
+      `What's really going on for you right now?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
   }
   
   /**

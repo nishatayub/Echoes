@@ -63,14 +63,14 @@ const generateResponse = async (req, res) => {
       // Map relationship types for better context
       let mappedRelationshipType = relationshipType || session.relationshipType || 'other';
       
-      // Map basic relationship types to more specific ones for AI
+      // Map basic relationship types - keep them simple for AI service
       const relationshipMapping = {
-        'family': 'family member',
+        'family': 'family',
         'friend': 'friend', 
         'partner': 'partner',
-        'pet': 'beloved pet',
+        'pet': 'pet',
         'mentor': 'mentor',
-        'other': 'loved one'
+        'other': 'other'
       };
       
       const contextualRelationship = relationshipMapping[mappedRelationshipType] || mappedRelationshipType;
@@ -203,15 +203,15 @@ const generateFinalLetter = async (req, res) => {
     if (regenerate || !session.finalLetter) {
       console.log(`${regenerate ? 'Regenerating' : 'Generating'} final letter using AI...`);
       
-      // Map relationship type for better context
+      // Map relationship type for better context - keep simple for AI service
       let mappedRelationshipType = relationshipType || session.relationshipType || 'other';
       const relationshipMapping = {
-        'family': 'family member',
+        'family': 'family',
         'friend': 'friend', 
         'partner': 'partner',
-        'pet': 'beloved pet',
+        'pet': 'pet',
         'mentor': 'mentor',
-        'other': 'loved one'
+        'other': 'other'
       };
       const contextualRelationship = relationshipMapping[mappedRelationshipType] || mappedRelationshipType;
 
