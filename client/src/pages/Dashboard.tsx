@@ -11,6 +11,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPersonName, setNewPersonName] = useState('');
+  const [newRelationshipType, setNewRelationshipType] = useState<'family' | 'friend' | 'partner' | 'pet' | 'mentor' | 'other'>('other');
   const [creating, setCreating] = useState(false);
   
   const { user, token } = useAuth();
@@ -208,10 +209,11 @@ const Dashboard: React.FC = () => {
     
     setCreating(true);
     try {
-      const session = await sessionAPI.createSession(newPersonName.trim());
+      const session = await sessionAPI.createSession(newPersonName.trim(), newRelationshipType);
       setSessions([session, ...sessions]);
       setShowCreateModal(false);
       setNewPersonName('');
+      setNewRelationshipType('other');
       navigate(`/session/${session._id}`);
     } catch {
       setError('Failed to create session');
@@ -421,20 +423,44 @@ const Dashboard: React.FC = () => {
                 <p style={{ color: '#6c757d' }} className="mb-4">
                   Who would you like to have a conversation with today?
                 </p>
-                <input
-                  type="text"
-                  className="form-control py-3"
-                  placeholder="Enter their name..."
-                  value={newPersonName}
-                  onChange={(e) => setNewPersonName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && createSession()}
-                  autoFocus
-                  style={{ 
-                    borderColor: '#dee2e6',
-                    fontSize: '1rem',
-                    borderRadius: '8px'
-                  }}
-                />
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control py-3"
+                    placeholder="Enter their name..."
+                    value={newPersonName}
+                    onChange={(e) => setNewPersonName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && createSession()}
+                    autoFocus
+                    style={{ 
+                      borderColor: '#dee2e6',
+                      fontSize: '1rem',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label" style={{ color: '#6c757d', fontWeight: '500' }}>
+                    What was your relationship with them?
+                  </label>
+                  <select
+                    className="form-select py-3"
+                    value={newRelationshipType}
+                    onChange={(e) => setNewRelationshipType(e.target.value as 'family' | 'friend' | 'partner' | 'pet' | 'mentor' | 'other')}
+                    style={{ 
+                      borderColor: '#dee2e6',
+                      fontSize: '1rem',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <option value="other">Other</option>
+                    <option value="family">Family Member</option>
+                    <option value="friend">Friend</option>
+                    <option value="partner">Partner/Spouse</option>
+                    <option value="pet">Pet</option>
+                    <option value="mentor">Mentor/Teacher</option>
+                  </select>
+                </div>
               </div>
               <div className="modal-footer border-0">
                 <button 

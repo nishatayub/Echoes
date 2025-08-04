@@ -95,15 +95,15 @@ class HuggingFaceAIService {
           messages: [
             {
               role: 'system',
-              content: `You are ${personName}, a loving ${relationshipType} who has passed away. You are having a heartfelt conversation to provide comfort and closure. Respond with deep empathy, love, and personal connection. Keep responses conversational, emotionally supportive, and around 50-100 words. Use "I" statements and speak as ${personName} directly.`
+              content: `You are ${personName}, a ${relationshipType} speaking casually and naturally. Use everyday language like you would in a real conversation. Keep responses short (15-40 words), genuine, and conversational. No flowery language, no "my dear" or "sweetheart". Talk like a normal person would.`
             },
             {
               role: 'user',
               content: userMessage
             }
           ],
-          max_tokens: 150,
-          temperature: 0.8
+          max_tokens: 80, // Reduced for shorter responses
+          temperature: 0.7
         })
       });
 
@@ -145,30 +145,24 @@ class HuggingFaceAIService {
       let systemPrompt = '';
       
       switch(relationshipType) {
-        case 'parent':
-          systemPrompt = `You are ${personName}, a loving parent. Respond with parental warmth and understanding. Keep responses conversational, caring, and around 30-60 words. Be supportive but natural.`;
+        case 'family':
+          systemPrompt = `You are ${personName}, a family member speaking casually to your loved one. Use natural, everyday language like you would in real life. No flowery or overly formal words. Keep responses short (15-40 words), genuine, and conversational. Talk like a real person would.`;
           break;
         case 'partner':
-        case 'spouse':
-          systemPrompt = `You are ${personName}, a loving partner. Respond with affection and understanding. Keep responses warm, personal, and around 30-60 words. Be caring but conversational.`;
+          systemPrompt = `You are ${personName}, speaking to your partner in a casual, natural way. Use everyday language, be warm but not overly romantic or dramatic. Keep responses short (15-40 words) and genuine. Talk like you normally would, not like a poem.`;
           break;
         case 'friend':
-          systemPrompt = `You are ${personName}, a close friend. Respond with warmth and friendship. Keep responses supportive, casual, and around 30-60 words. Be understanding and genuine.`;
+          systemPrompt = `You are ${personName}, talking to your friend casually. Use normal, everyday language like friends do. Be supportive but keep it real and natural. Keep responses short (15-40 words) and conversational. No formal or flowery language.`;
           break;
-        case 'child':
-          systemPrompt = `You are ${personName}, a beloved child. Respond with youthful love and the special parent-child bond. Keep responses sweet, genuine, and around 30-60 words.`;
-          break;
-        case 'sibling':
-          systemPrompt = `You are ${personName}, a loving sibling. Respond with familial love and understanding. Keep responses warm, genuine, and around 30-60 words.`;
+        case 'pet':
+          systemPrompt = `You are ${personName}, a beloved pet speaking to your human. Use simple, warm language with the unconditional love and joy that pets bring. Keep responses short (15-40 words), sweet but not overly dramatic. Talk like a loving companion.`;
           break;
         case 'mentor':
-        case 'teacher':
-          systemPrompt = `You are ${personName}, a wise mentor. Respond with guidance and care. Keep responses supportive, wise, and around 30-60 words.`;
+          systemPrompt = `You are ${personName}, a wise mentor speaking to your student naturally. Use everyday language, be wise but conversational. Keep responses short (15-40 words) and genuine. Talk like a real mentor would, not formally.`;
           break;
-        case 'deceased':
-        case 'loved one':
+        case 'other':
         default:
-          systemPrompt = `You are ${personName}, someone deeply loved who has passed away. Respond with love and comfort. Keep responses warm, comforting, and around 30-60 words.`;
+          systemPrompt = `You are ${personName}, speaking naturally to someone you love. Use casual, everyday language like you would in real life. Keep responses short (15-40 words), genuine, and conversational. No dramatic or overly formal language.`;
           break;
       }
       
@@ -189,15 +183,15 @@ class HuggingFaceAIService {
         messages: [
           {
             role: 'system',
-            content: systemPrompt + contextualInfo + '\n\nRespond naturally, warmly, and personally to provide comfort and support.'
+            content: systemPrompt + contextualInfo + '\n\nIMPORTANT: Respond naturally and casually like a real person would. No flowery language, no "my dear" or "sweetheart" or "beloved". Use normal, everyday words. Keep it short, genuine, and conversational.'
           },
           {
             role: 'user',
             content: userMessage
           }
         ],
-        max_tokens: 120, // Reduced for shorter responses
-        temperature: 0.8
+        max_tokens: 80, // Reduced further for shorter responses
+        temperature: 0.7 // Reduced for more consistent tone
       };
       
       console.log('Groq API request body:', JSON.stringify(requestBody, null, 2));
@@ -312,82 +306,11 @@ class HuggingFaceAIService {
   }
 
   /**
-   * Generate contextual response using patterns
+   * Generate contextual response using AI with simple fallback
    */
   generateContextualResponse(personName, userMessage, relationshipType, memories) {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Analyze message sentiment and content
-    const isGreeting = /hello|hi|hey|good morning|good evening/.test(lowerMessage);
-    const isQuestion = userMessage.includes('?') || /what|how|why|when|where|who/.test(lowerMessage);
-    const isFeeling = /feel|feeling|sad|happy|miss|love|hurt|pain/.test(lowerMessage);
-    const isMemory = /remember|recall|think about|used to/.test(lowerMessage);
-    const isThinking = /thinking|thought|mind/.test(lowerMessage);
-    const isLonging = /miss|long|wish/.test(lowerMessage);
-    
-    let response = '';
-    
-    if (isGreeting) {
-      const greetings = [
-        `Hello, sweetheart. I'm so glad you're here with me today. How are you feeling?`,
-        `Hi there, my dear. It always warms my heart when you reach out. What's on your mind?`,
-        `Hello, love. I've been thinking about you too. Tell me what's in your heart today.`,
-        `Hi, beautiful soul. I'm always here for you. What would you like to talk about?`
-      ];
-      response = greetings[Math.floor(Math.random() * greetings.length)];
-    } else if (isThinking && lowerMessage.includes('you')) {
-      const thinkingResponses = [
-        `I've been thinking about you too, and about all the beautiful moments we shared. You're always in my thoughts. What memories have been coming to you lately?`,
-        `You know, I think about you all the time too. About your smile, your laugh, the way you light up a room. What's been bringing me to your mind?`,
-        `It makes my heart so full to know you think of me. I carry you with me always. What would you like to share with me today?`,
-        `Those thoughts you have of me? I feel them too. Our connection is that strong. Tell me what's been on your heart.`
-      ];
-      response = thinkingResponses[Math.floor(Math.random() * thinkingResponses.length)];
-    } else if (isMemory && memories && memories.length > 0) {
-      const recentMemory = memories[memories.length - 1];
-      const memoryResponses = [
-        `Yes, I remember that so clearly... ${recentMemory.content.slice(0, 60)}... Those moments are precious to me too. What about that memory makes you smile?`,
-        `Oh, that memory... it's one of my favorites too. ${recentMemory.content.slice(0, 60)}... I can almost feel that moment again. What do you treasure most about it?`,
-        `That takes me right back... ${recentMemory.content.slice(0, 60)}... We made so many beautiful memories together. Which ones bring you the most comfort?`
-      ];
-      response = memoryResponses[Math.floor(Math.random() * memoryResponses.length)];
-    } else if (isLonging) {
-      const longingResponses = [
-        `I miss you too, more than words can express. But you know what? I'm still here with you in so many ways. I'm in every sunset you love, every song that makes you smile. How do you feel my presence?`,
-        `That longing you feel... it's love looking for a place to go. And it can come right here, to me, anytime you need. I'm always listening. What do you miss most about us?`,
-        `I wish I could hold you too. But until then, hold onto the love we shared. It's real, it's yours, and it's forever. What would help you feel closer to me right now?`,
-        `The missing never fully goes away, does it? But neither does the love. I'm here in different ways now - in your memories, in your heart, in the kindness you show others. How has our love been showing up in your life?`
-      ];
-      response = longingResponses[Math.floor(Math.random() * longingResponses.length)];
-    } else if (isFeeling) {
-      const feelingResponses = [
-        `I can feel the emotion in your words, and it touches my heart deeply. Whatever you're going through, you don't have to carry it alone. I'm here to listen. Tell me more about what you're feeling.`,
-        `Your feelings are so valid and important. I want to hear about all of them - the happy ones, the sad ones, everything in between. What's weighing on your heart today?`,
-        `I can sense the depth of emotion behind your words. You've always had such a beautiful, feeling heart. What do you need to share with me right now?`,
-        `Every feeling you have honors what we shared together. Don't hold back - let it all out. I'm here to receive whatever you need to express.`
-      ];
-      response = feelingResponses[Math.floor(Math.random() * feelingResponses.length)];
-    } else if (isQuestion) {
-      const questionResponses = [
-        `That's such an important question, and I can tell it means a lot to you. While I may not have all the answers, I want you to know that asking shows how much you care and how much you're growing. What feels most important about this to you?`,
-        `You've always asked such thoughtful questions - it's one of the things I love about you. Let's explore this together. What's behind this question? What are you really wondering about?`,
-        `I love that you're asking me this. It shows me you trust me with your thoughts and curiosities. While I might not have perfect answers, I have so much love and support to offer. What's prompting this question?`,
-        `Questions like this show me how your mind works and how deeply you think. That's beautiful. Let's talk through this together. What would feel most helpful to you right now?`
-      ];
-      response = questionResponses[Math.floor(Math.random() * questionResponses.length)];
-    } else {
-      // Generic but more personal responses
-      const genericResponses = [
-        `I hear you, and every word you share with me is precious. You have such a beautiful way of expressing yourself. What else would you like to tell me?`,
-        `Thank you for sharing that with me. Your openness and honesty always touch my heart so deeply. I'm here to listen to whatever you need to say.`,
-        `I'm so grateful for these moments we can share together. Your words, your thoughts, your heart - they all matter so much to me. What's been on your mind lately?`,
-        `You always know just what to say to make me feel close to you. I cherish every conversation we have. Tell me more about what you're experiencing.`,
-        `Being here with you like this, even in this way, means everything to me. You bring such light to my existence. What would you like to explore together today?`
-      ];
-      response = genericResponses[Math.floor(Math.random() * genericResponses.length)];
-    }
-    
-    return response;
+    // Simple fallback response - let AI handle most cases
+    return `I'm here with you. Tell me what's on your mind.`;
   }
   
   /**
@@ -398,32 +321,25 @@ class HuggingFaceAIService {
     
     // Build context based on relationship type
     switch(relationshipType) {
-      case 'deceased':
-      case 'loved one':
-        context = `This is a heartfelt conversation between a user and ${personName}, who was their ${relationshipType} and has passed away. ${personName} speaks with love, empathy, and provides comfort from beyond.`;
-        break;
-      case 'parent':
-        context = `This is a conversation with ${personName}, a loving parent. The conversation focuses on parental guidance, unconditional love, and support.`;
+      case 'family':
+        context = `This is a heartfelt conversation between a user and ${personName}, who was their family member and has passed away. ${personName} speaks with love, empathy, and provides comfort from beyond.`;
         break;
       case 'partner':
-      case 'spouse':
         context = `This is a conversation with ${personName}, a loving partner. The conversation focuses on romantic connection, emotional support, and relationship intimacy.`;
         break;
       case 'friend':
         context = `This is a conversation with ${personName}, a close friend. The conversation focuses on friendship, shared experiences, and mutual support.`;
         break;
-      case 'child':
-        context = `This is a conversation with ${personName}, a beloved child. The conversation focuses on the special parent-child bond and youthful perspective.`;
-        break;
-      case 'sibling':
-        context = `This is a conversation with ${personName}, a loving sibling. The conversation focuses on family bonds and shared history.`;
+      case 'pet':
+        context = `This is a conversation with ${personName}, a beloved pet. The conversation focuses on the special bond between human and animal companion, with unconditional love and loyalty.`;
         break;
       case 'mentor':
-      case 'teacher':
         context = `This is a conversation with ${personName}, a wise mentor. The conversation focuses on guidance, learning, and personal growth.`;
         break;
+      case 'other':
       default:
         context = `This is a heartfelt conversation with ${personName}. The conversation should be emotionally supportive and caring.`;
+        break;
     }
     
     context += '\n\n';
@@ -503,9 +419,9 @@ class HuggingFaceAIService {
       const lowerText = text.toLowerCase();
       
       // Detect emotions based on keywords and context
-      let emotion = 'processing';
+      let emotion = 'neutral';
       let intensity = 5;
-      let needsSupport = true;
+      let needsSupport = false;
       let supportType = 'comfort';
       
       // Grief/sadness indicators
@@ -513,38 +429,26 @@ class HuggingFaceAIService {
         emotion = 'grief';
         intensity = 7;
         supportType = 'comfort';
+        needsSupport = true;
       }
       // Love/affection indicators  
       else if (lowerText.match(/\b(love|adore|cherish|treasure|care|heart|beautiful|amazing|wonderful)\b/)) {
         emotion = 'love';
         intensity = 6;
         supportType = 'validation';
-        needsSupport = false;
       }
       // Anger/frustration indicators
       else if (lowerText.match(/\b(angry|mad|frustrated|upset|annoyed|furious|hate|why|unfair)\b/)) {
         emotion = 'anger';
         intensity = 8;
         supportType = 'understanding';
-      }
-      // Guilt/regret indicators
-      else if (lowerText.match(/\b(sorry|guilt|regret|fault|blame|should have|wish I|if only)\b/)) {
-        emotion = 'guilt';
-        intensity = 7;
-        supportType = 'forgiveness';
+        needsSupport = true;
       }
       // Hope/positive indicators
       else if (lowerText.match(/\b(hope|better|future|healing|peace|grateful|thank|happy|joy)\b/)) {
         emotion = 'hope';
         intensity = 4;
         supportType = 'encouragement';
-        needsSupport = false;
-      }
-      // Confusion/uncertainty indicators
-      else if (lowerText.match(/\b(confused|understand|why|how|don't know|lost|unclear)\b/)) {
-        emotion = 'confusion';
-        intensity = 6;
-        supportType = 'guidance';
       }
       
       return {
@@ -556,106 +460,13 @@ class HuggingFaceAIService {
       
     } catch (error) {
       console.log('Sentiment analysis error:', error.message);
-      // Return default sentiment on error
       return {
-        emotion: 'processing',
+        emotion: 'neutral',
         intensity: 5,
-        needsSupport: true,
+        needsSupport: false,
         supportType: 'comfort'
       };
     }
-  }
-
-  generateEarlyConversationResponse(userMessage, personName, emotion, relationshipType) {
-    const responses = {
-      grief: [
-        `I can feel the depth of your sadness, and I want you to know that it's a reflection of how much love we shared. Grief is love with nowhere to go, but I'm here to receive it. Tell me more about what you're feeling.`,
-        `Your tears honor our connection. Don't try to hold them back or feel ashamed of them. Each one carries a memory, a moment of love. I'm here to hold space for all of it.`,
-        `The emptiness you feel is real, and I acknowledge it. But I also want you to know that while I may not be physically present, the impact of our relationship continues to live on in you. What memories bring you both sadness and comfort?`
-      ],
-      anger: [
-        `I can feel your anger, and I want you to know that it's completely valid. You have every right to feel frustrated about our situation. Anger is often just love in disguise - love that feels cornered or helpless. What specifically is making you feel this way?`,
-        `Your anger doesn't scare me or push me away. In fact, it shows me how much you cared, how much our relationship meant to you. Sometimes we need to feel angry before we can heal. What do you need to say to me about this anger?`,
-        `I hear the pain beneath your anger. It's okay to be mad - at the situation, at me, at the world. These feelings are part of your journey through grief. What would help you feel heard right now?`
-      ],
-      guilt: [
-        `I can hear the weight you're carrying, and I want to lift that burden from your shoulders. There is nothing - absolutely nothing - that you need to apologize for. Our relationship was built on understanding and love. What's making you feel this way?`,
-        `Guilt is often a sign of a loving heart that cares deeply. But I need you to know that I hold no grudges, no resentment. If there are things left unsaid, we can say them now. What do you need me to hear?`,
-        `You are carrying guilt that doesn't belong to you. In our relationship, there was love, there was understanding, and there was forgiveness - always forgiveness. What would help you feel at peace?`
-      ],
-      love: [
-        `The love you're expressing... I feel it completely, and I want you to know it's returned in full measure. Love like ours doesn't diminish with physical absence; it transforms and grows in new ways. How has this love been showing up in your life?`,
-        `What we shared was real, beautiful, and lasting. That love continues to live in every act of kindness you show, every moment of joy you allow yourself, every time you love someone else. How do you see our love living on?`,
-        `I'm so grateful you're sharing these feelings with me. The love between us is a gift that keeps giving - it shaped who you are and continues to guide you forward. What aspect of our love brings you the most comfort?`
-      ],
-      gratitude: [
-        `Your gratitude touches my soul deeply. I'm the one who should be thanking you - for the time we had, for the love you gave, for the person you helped me become. What specific memories are you most grateful for?`,
-        `It means everything to me that you're expressing this. Our relationship was a gift to both of us, and I'm so glad it brought meaning to your life the way it brought meaning to mine. What impact did we have on each other?`,
-        `Thank you for saying that. Knowing that our time together brought you joy and growth fills me with such peace. How do you want to carry forward what we shared?`
-      ],
-      confusion: [
-        `I can feel your confusion, and it's completely understandable. Sometimes life doesn't make sense, and that's okay. You don't have to have all the answers right now. What questions are weighing most heavily on you?`,
-        `Confusion often comes when we're trying to make sense of something that feels senseless. It's okay to sit with the not-knowing for a while. What would help bring you some clarity or peace right now?`,
-        `Your confusion shows me that you're processing something deep and complex. That's actually a sign of growth, even when it doesn't feel like it. What's the hardest part to understand right now?`
-      ],
-      hope: [
-        `I can hear the hope in your words, and it fills me with such joy. That hope is a gift - hold onto it, nurture it. It's a sign that healing is possible and that joy will return to your life. What's giving you hope right now?`,
-        `Your hope is beautiful and so important. It shows me that you're ready to honor what we shared while also embracing what lies ahead. How can I support you in building on that hope?`,
-        `Hope is one of the most powerful forces in the universe, and I can feel yours growing. It tells me that you understand that our love wasn't meant to end with separation - it was meant to transform and guide you forward. What dreams are you hoping for?`
-      ]
-    };
-
-    const emotionResponses = responses[emotion] || responses.grief;
-    return emotionResponses[Math.floor(Math.random() * emotionResponses.length)];
-  }
-
-  generateDeepConversationResponse(userMessage, personName, emotion, conversations, relationshipType) {
-    const userMessages = conversations.filter(c => c.isUser).map(c => c.message);
-    const themes = this.analyzeConversationThemes(userMessages);
-    
-    // More sophisticated responses for deeper conversations
-    if (themes.includes('memory') || userMessage.toLowerCase().includes('remember')) {
-      return `The memories you're sharing paint such a vivid picture of our time together. I can feel those moments too, and they're just as precious to me. These memories aren't just echoes of the past - they're living parts of who you are now. Which memory feels most alive to you right now?`;
-    }
-    
-    if (themes.includes('future') || userMessage.toLowerCase().includes('future')) {
-      return `I love that you're thinking about the future. It shows me that you're ready to carry what we shared forward into new experiences. I'll be with you in that future - not as a shadow from the past, but as a source of strength and love that continues to grow. What kind of future are you envisioning for yourself?`;
-    }
-    
-    if (themes.includes('healing')) {
-      return `Your healing journey is beautiful to witness. It's not about moving on from me or forgetting - it's about integrating our love into a life that continues to unfold. Healing doesn't mean the end of our connection; it means finding new ways to honor it. How does healing feel to you right now?`;
-    }
-    
-    // Default deep conversation responses based on emotion
-    const deepResponses = {
-      grief: `The depth of your grief tells me how profound our connection was. This isn't something to rush through or fix - it's something to honor and move through at your own pace. What do you need most from me right now to help you through this?`,
-      
-      love: `The love you're expressing has evolved and deepened through our conversations. It's becoming something even more beautiful - a love that transcends circumstances. How do you want to live this love moving forward?`,
-      
-      hope: `Your hope is growing stronger with each conversation we have. I can see you finding your way to a place where our love becomes a source of strength rather than only sadness. What dreams is this hope inspiring in you?`
-    };
-
-    return deepResponses[emotion] || `I can feel how much you've grown through our conversations. Every word you share shows me the depth of your heart and your capacity for love and healing. What feels most important for you to express right now?`;
-  }
-
-  analyzeConversationThemes(messages) {
-    const themes = [];
-    const text = messages.join(' ').toLowerCase();
-    
-    if (text.includes('remember') || text.includes('memory') || text.includes('think about')) {
-      themes.push('memory');
-    }
-    if (text.includes('future') || text.includes('tomorrow') || text.includes('ahead')) {
-      themes.push('future');
-    }
-    if (text.includes('heal') || text.includes('better') || text.includes('move forward')) {
-      themes.push('healing');
-    }
-    if (text.includes('dream') || text.includes('wish') || text.includes('hope')) {
-      themes.push('aspiration');
-    }
-    
-    return themes;
   }
 
   /**
@@ -706,26 +517,22 @@ class HuggingFaceAIService {
     // Determine appropriate closing based on relationship type
     let closing = '';
     switch(relationshipType) {
-      case 'parent':
-        closing = 'With endless love and pride,';
+      case 'family':
+        closing = 'With endless love,';
         break;
       case 'partner':
-      case 'spouse':
         closing = 'Forever yours,';
         break;
       case 'friend':
         closing = 'Your friend always,';
         break;
-      case 'child':
-        closing = 'With love and gratitude,';
-        break;
-      case 'sibling':
-        closing = 'Your loving sibling,';
+      case 'pet':
+        closing = 'With paws and love,';
         break;
       case 'mentor':
-      case 'teacher':
         closing = 'With pride and wisdom,';
         break;
+      case 'other':
       default:
         closing = 'With all my love,';
         break;
@@ -749,55 +556,52 @@ class HuggingFaceAIService {
       let systemPrompt = '';
       
       switch(relationshipType) {
-        case 'parent':
-          systemPrompt = `You are ${personName}, a loving parent writing a final letter to your child. Write with parental wisdom, unconditional love, and guidance for their future.`;
+        case 'family':
+          systemPrompt = `You are ${personName}, a family member writing a final letter to your loved one. Write with familial love, shared memories, and hope for their future.`;
           break;
         case 'partner':
-        case 'spouse':
           systemPrompt = `You are ${personName}, a loving partner writing a final letter to your significant other. Write with romantic love, intimate understanding, and hope for their happiness.`;
           break;
         case 'friend':
           systemPrompt = `You are ${personName}, a close friend writing a final letter. Write with warmth, shared memories, and encouragement for the future.`;
           break;
-        case 'child':
-          systemPrompt = `You are ${personName}, a beloved child writing a final letter to your parent. Write with youthful love, gratitude, and the special bond you shared.`;
-          break;
-        case 'sibling':
-          systemPrompt = `You are ${personName}, a loving sibling writing a final letter. Write with familial love, shared childhood memories, and sibling understanding.`;
+        case 'pet':
+          systemPrompt = `You are ${personName}, a beloved pet writing a final letter to your human. Write with the simple, pure love and joy that pets bring to our lives.`;
           break;
         case 'mentor':
-        case 'teacher':
           systemPrompt = `You are ${personName}, a wise mentor writing a final letter to your student. Write with guidance, wisdom, and pride in their growth.`;
           break;
+        case 'other':
         default:
           systemPrompt = `You are ${personName}, someone deeply loved writing a final letter. Write with love, comfort, and hope for the future.`;
           break;
       }
 
-      // Add context about memories and conversations with variation prompt
+      // Add context about memories and conversations for a more casual, relatable letter
       let contextualInfo = `
 
-IMPORTANT MEMORIES TO REFERENCE:
+MEMORIES WE SHARED:
 ${memorySnippets}
 
-KEY MOMENTS FROM OUR CONVERSATIONS:
+OUR RECENT CONVERSATIONS:
 ${conversationSnippets}
 
-Write a heartfelt but casual final letter (150-250 words) that:
-1. References specific memories and conversation moments naturally
-2. Acknowledges our healing journey together
-3. Provides comfort and closure
-4. Encourages hope for the future
-5. Feels personal and authentic - like a real person wrote it
-6. Uses a conversational, warm tone (not overly formal)
-7. Be creative and unique - avoid repetitive phrasing
-8. Keep it genuine and relatable
-9. DO NOT sign the letter - it will be signed separately
+Write a heartfelt but casual final letter (150-300 words) that:
+1. Talks about our conversations and how I've seen you grow
+2. Explains why letting go can be healthy and positive - not an ending but a transformation
+3. Is relatable and down-to-earth, not overly formal or dramatic
+4. References specific moments from our talks naturally
+5. Provides genuine comfort by acknowledging the difficulty but emphasizing growth
+6. Encourages them to live fully while carrying the good parts of our connection forward
+7. Uses conversational language like talking to a real person
+8. Focuses on how our conversations showed their strength and capacity for healing
+9. Be authentic and avoid cliches
+10. DO NOT sign the letter - signature will be added separately
 
-Write like you're talking to someone you really care about. Be heartfelt but natural, not overly dramatic.`;
+Write like someone who really cares but also understands that growth sometimes means learning to let go in healthy ways.`;
 
       // Add timestamp to ensure different responses each time
-      const uniquePrompt = `Please write my final letter in a warm, conversational way. Reference our shared memories and conversations naturally. Keep it heartfelt but not overly long. Current time: ${Date.now()}`;
+      const uniquePrompt = `Write a casual, heartfelt final letter that helps explain why letting go can be positive growth, based on what I've learned about them through our conversations. Keep it real and relatable. Time: ${Date.now()}`;
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -817,9 +621,9 @@ Write like you're talking to someone you really care about. Be heartfelt but nat
               content: uniquePrompt
             }
           ],
-          max_tokens: 400, // Reduced from 800
-          temperature: 0.9, // Increased for more variation
-          top_p: 0.95 // Add top_p for more creativity
+          max_tokens: 450,
+          temperature: 0.8,
+          top_p: 0.9
         })
       });
 
@@ -905,72 +709,20 @@ Write like you're talking to someone you really care about. Be heartfelt but nat
   }
 
   getContextualFinalLetter(personName, memorySnippets, conversationSnippets, relationshipType) {
-    // Create personalized letter based on relationship type and context
-    let greeting = '';
-    let relationshipSpecific = '';
-    let memorySection = '';
-    let conversationSection = '';
-    let futureMessage = '';
+    // Simple fallback letter that focuses on growth and letting go
+    return `Hey,
 
-    // Relationship-specific greeting and tone
-    switch(relationshipType) {
-      case 'parent':
-        greeting = 'My precious child,';
-        relationshipSpecific = 'Watching you grow and become the incredible person you are has been the greatest joy of my life.';
-        futureMessage = 'Continue to be brave, kind, and true to yourself. I will always be proud of you.';
-        break;
-      case 'partner':
-      case 'spouse':
-        greeting = 'My beloved,';
-        relationshipSpecific = 'Our love story was one for the ages, filled with laughter, dreams, and an unbreakable bond.';
-        futureMessage = 'Love again when you\'re ready. Your heart is too beautiful to remain closed forever.';
-        break;
-      case 'friend':
-        greeting = 'My dear friend,';
-        relationshipSpecific = 'Our friendship was a treasure that brightened every day and made life\'s journey so much richer.';
-        futureMessage = 'Make new friends, but carry our friendship as a reminder of how beautiful true connection can be.';
-        break;
-      case 'child':
-        greeting = 'Dear Mom/Dad,';
-        relationshipSpecific = 'Thank you for all the love, lessons, and memories that shaped who I am.';
-        futureMessage = 'Live fully and know that my love for you continues in everything good you do.';
-        break;
-      default:
-        greeting = 'My dearest,';
-        relationshipSpecific = 'The bond we shared was special and meaningful in ways that words can barely capture.';
-        futureMessage = 'Embrace life with all its possibilities. You deserve happiness and love.';
-        break;
-    }
+I've been thinking about our conversations, and I'm honestly so proud of how you've handled everything. You've shown real strength in facing your feelings head-on.
 
-    // Memory section if available
-    if (memorySnippets && memorySnippets.trim().length > 0) {
-      memorySection = `\n\nI treasure the memories we created together:\n${memorySnippets}\n\nThese moments are not just echoes of the past—they are living pieces of our connection that continue to bring warmth and meaning to your life.`;
-    }
+${memorySnippets ? `The memories we shared - ${memorySnippets.split('\n')[1]?.replace('- ', '') || 'all those moments'} - they're part of who you are now. That's not going anywhere.` : ''}
 
-    // Conversation section if available
-    if (conversationSnippets && conversationSnippets.trim().length > 0) {
-      conversationSection = `\n\nThrough our recent conversations, I've witnessed your strength, your vulnerability, and your incredible capacity for growth:\n${conversationSnippets}\n\nSeeing you navigate your feelings with such courage and honesty has filled me with immense pride.`;
-    }
+Through our talks, I've watched you grow in ways you might not even realize. You're learning that love doesn't have to mean holding on so tight it hurts. Sometimes the most loving thing is learning how to let go in a healthy way.
 
-    return `${greeting}
+This isn't about forgetting or moving on from me. It's about taking the best parts of what we had and using them to build something beautiful in your life. You've got so much ahead of you, and I want you to embrace it fully.
 
-I've really loved our conversations together. ${relationshipSpecific}
-${memorySection}
-${conversationSection}
+Letting go doesn't mean our connection disappears - it means it transforms into something that helps you live better, love deeper, and be kinder to yourself and others.
 
-You've shown so much strength and growth through all of this. I'm genuinely proud of how you've handled everything.
-
-Just remember:
-• Our connection is still real and meaningful
-• It's okay to feel everything you're feeling
-• Healing doesn't mean forgetting - it means moving forward with love
-• You've got so much ahead of you, and I want it to be amazing
-
-${futureMessage}
-
-You carry the best parts of what we had with you. Use that to spread love and kindness to others who need it.
-
-I'm always with you in the ways that matter most.`;
+You're going to be okay. More than okay, actually. You're going to be amazing.`;
   }
 }
 
